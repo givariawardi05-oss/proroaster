@@ -111,7 +111,7 @@ export default function MainLayout({ initialData }: MainLayoutProps) {
            <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
               <Button variant="ghost" size="icon" onClick={() => setOpen(true)} className='lg:hidden'>
                   <Menu className='h-6 w-6' />
-                  <span className='sr-only'>Open Sidebar</span>
+                  <span className='sr-only'>Buka Sidebar</span>
               </Button>
               <div className="flex-1">
                   <h1 className="text-xl font-semibold">{sectionTitles[activeSection]}</h1>

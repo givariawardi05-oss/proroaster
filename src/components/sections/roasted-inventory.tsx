@@ -26,6 +26,7 @@ import { Package, DollarSign, Scale, ArrowRight, Blend } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SubmitButton } from '../submit-button';
 import { BlendForm } from './blend-form';
+import { transferToStore } from '@/lib/actions';
 
 interface RoastedInventoryProps {
   data: GlobalData;
@@ -76,65 +77,14 @@ export function RoastedInventory({ data, onDataChange }: RoastedInventoryProps) 
         formData.append('currentData', JSON.stringify(data));
         formData.append('itemsToTransfer', JSON.stringify(itemsToTransfer));
         
-        // This is a placeholder for a server action that doesn't exist yet.
-        // To make this functional, you would replace this with:
-        // const result = await transferToStoreAction(null, formData);
-        // For now, we simulate the logic client-side to demonstrate UI changes.
-        
-        try {
-            const db: GlobalData = JSON.parse(formData.get('currentData') as string);
-            const itemsToTransfer: { id: string }[] = JSON.parse(formData.get('itemsToTransfer') as string);
+        const result = await transferToStore(null, formData);
 
-            if (!itemsToTransfer || itemsToTransfer.length === 0) {
-                 toast({ title: 'Error', description: 'Tidak ada item yang dipilih untuk ditransfer.', variant: 'destructive' });
-                 return;
-            }
-
-            let updatedDb = { ...db, roastedInventory: [...db.roastedInventory], storeInventory: [...db.storeInventory] };
-
-            for (const item of itemsToTransfer) {
-                const roastedIndex = updatedDb.roastedInventory.findIndex(i => i.id === item.id);
-                if (roastedIndex === -1) continue;
-                
-                const roastedDoc = updatedDb.roastedInventory[roastedIndex];
-                const stockToTransfer = roastedDoc.Stock_Kg;
-
-                if (stockToTransfer <= 0) continue;
-
-                const storeInvIndex = updatedDb.storeInventory.findIndex(si => si.Nama_Produk === roastedDoc.Produk_Roasting);
-                const hpp = roastedDoc.HPP_Per_Kg;
-                const valueToTransfer = stockToTransfer * hpp;
-                const sellPrice = roastedDoc.Harga_Jual_Kg > 0 ? roastedDoc.Harga_Jual_Kg : hpp * 1.5; // Use existing or default
-                const category = roastedDoc.Kategori || 'Roasted Beans';
-
-                if (storeInvIndex > -1) {
-                    const storeInvItem = updatedDb.storeInventory[storeInvIndex];
-                    const newStoreStock = storeInvItem.Stock_Kg + stockToTransfer;
-                    const newStoreValue = storeInvItem.Total_Value + valueToTransfer;
-                    storeInvItem.Stock_Kg = newStoreStock;
-                    storeInvItem.Total_Value = newStoreValue;
-                    storeInvItem.HPP_Per_Kg = newStoreStock > 0 ? newStoreValue / newStoreStock : 0;
-                    storeInvItem.Harga_Jual_Kg = storeInvItem.Harga_Jual_Kg > 0 ? storeInvItem.Harga_Jual_Kg : sellPrice;
-                } else {
-                    updatedDb.storeInventory.push({
-                        id: roastedDoc.Produk_Roasting.replace(/\s+/g, '-').toLowerCase() + `-${Date.now()}`,
-                        Nama_Produk: roastedDoc.Produk_Roasting,
-                        Kategori: category,
-                        Stock_Kg: stockToTransfer,
-                        HPP_Per_Kg: hpp,
-                        Harga_Jual_Kg: sellPrice,
-                        Total_Value: valueToTransfer,
-                    });
-                }
-                
-                roastedDoc.Stock_Kg = 0;
-                roastedDoc.Total_Value = 0;
-            }
-             toast({ title: 'Sukses', description: `${itemsToTransfer.length} item berhasil ditransfer ke toko.` });
-             onDataChange(updatedDb);
+        if (result?.status === 'success' && result.data) {
+             toast({ title: 'Sukses', description: result.message });
+             onDataChange(result.data);
              setSelectedItems(new Set());
-        } catch (e: any) {
-            toast({ title: 'Error', description: e.message, variant: 'destructive' });
+        } else {
+             toast({ title: 'Error', description: result?.message || 'Gagal mentransfer item.', variant: 'destructive' });
         }
     });
   }
@@ -146,7 +96,7 @@ export function RoastedInventory({ data, onDataChange }: RoastedInventoryProps) 
     <div className="space-y-6">
       <div className="flex justify-between items-start">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Inventory Hasil Roasting</h2>
+          <h2 className="text-3xl font-bold tracking-tight">Inventaris Hasil Roasting</h2>
           <p className="text-muted-foreground">Stok hasil roasting yang siap dipindah ke toko.</p>
         </div>
         <div className="flex gap-2">

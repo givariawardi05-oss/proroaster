@@ -104,6 +104,13 @@ export type NextIds = {
     salesInvoice: string;
 }
 
+export type BlendComponent = {
+    id: string;
+    name: string;
+    percentage: number;
+};
+
+
 // Data that is actually stored in localStorage
 export type StorableGlobalData = {
     warehouseData: WarehouseItem[];

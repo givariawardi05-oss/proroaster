@@ -1,7 +1,7 @@
 "use server";
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import type { GlobalData, PurchaseItem, SalesItem, Asset, Settings, StorableGlobalData } from './definitions';
+import type { GlobalData, PurchaseItem, SalesItem, Asset, Settings, StorableGlobalData, BlendComponent } from './definitions';
 
 const safeParseFloat = (val: any): number => {
     const num = parseFloat(val);
@@ -207,12 +207,16 @@ export async function createRoastingBatch(prevState: ActionState, formData: Form
 
 
 // --- Transfer to Store Action ---
-export async function transferToStore(db: GlobalData, itemsToTransfer: { id: string }[]): Promise<ActionState> {
-    if (!itemsToTransfer || itemsToTransfer.length === 0) {
-        return { message: 'Tidak ada item yang dipilih untuk ditransfer.', status: 'error' };
-    }
+export async function transferToStore(prevState: ActionState, formData: FormData): Promise<ActionState> {
     
     try {
+        const db: GlobalData = JSON.parse(formData.get('currentData') as string);
+        const itemsToTransfer: { id: string }[] = JSON.parse(formData.get('itemsToTransfer') as string);
+
+        if (!itemsToTransfer || itemsToTransfer.length === 0) {
+            return { message: 'Tidak ada item yang dipilih untuk ditransfer.', status: 'error' };
+        }
+
         let updatedDb: StorableGlobalData = {
             purchaseInvoices: [...db.purchaseInvoices],
             transactions: [...db.transactions],
@@ -425,7 +429,19 @@ export async function createAsset(prevState: ActionState, formData: FormData): P
         const updatedDb: StorableGlobalData = {
             ...db,
             assetsData: [...db.assetsData, assetData],
+            transactions: [...db.transactions]
         };
+
+        updatedDb.transactions.push({
+            id: `trx-${Date.now()}-asset`,
+            Tanggal: assetData.Tgl_Perolehan,
+            Deskripsi: `Pembelian Aset: ${assetData.Nama_Aset}`,
+            Referensi: assetData.id,
+            Kategori: 'Pembelian Aset',
+            Debit: 0,
+            Kredit: assetData.Nilai_Perolehan,
+        });
+
 
         revalidatePath('/');
         return { message: 'Aset berhasil dicatat!', status: 'success', data: updatedDb };
@@ -490,5 +506,100 @@ export async function resetAllData(prevState: ActionState, formData: FormData): 
     } catch (e: any) {
         console.error("Error resetting data:", e);
         return { message: `Reset gagal: ${e.message}`, status: 'error' };
+    }
+}
+
+
+// --- Create Blend Action ---
+export async function createBlend(prevState: ActionState, formData: FormData): Promise<ActionState> {
+    try {
+        const db: GlobalData = JSON.parse(formData.get('currentData') as string);
+        const blendData = {
+            name: formData.get('blendName') as string,
+            totalQty: safeParseFloat(formData.get('totalQty')),
+            sellPrice: safeParseFloat(formData.get('sellPrice')),
+            components: JSON.parse(formData.get('components') as string) as BlendComponent[],
+        };
+
+        if (!blendData.name || blendData.totalQty <= 0 || blendData.sellPrice <= 0 || blendData.components.length === 0) {
+            throw new Error("Data blend tidak lengkap. Harap isi semua field.");
+        }
+
+        const totalPercentage = blendData.components.reduce((sum, c) => sum + c.percentage, 0);
+        if (Math.round(totalPercentage) !== 100) {
+            throw new Error(`Total persentase harus 100%, saat ini ${totalPercentage}%.`);
+        }
+
+        let updatedDb: StorableGlobalData = {
+            ...db,
+            roastedInventory: [...db.roastedInventory],
+            storeInventory: [...db.storeInventory],
+            transactions: [...db.transactions],
+        };
+
+        let calculatedHpp = 0;
+
+        // Check stock and prepare deductions
+        for (const component of blendData.components) {
+            const componentQtyNeeded = blendData.totalQty * (component.percentage / 100);
+            const roastedIndex = updatedDb.roastedInventory.findIndex(r => r.id === component.id);
+            if (roastedIndex === -1) throw new Error(`Komponen ${component.name} tidak ditemukan di inventaris roasted.`);
+
+            const roastedItem = updatedDb.roastedInventory[roastedIndex];
+            if (roastedItem.Stock_Kg < componentQtyNeeded) throw new Error(`Stok ${roastedItem.Produk_Roasting} tidak mencukupi. Butuh ${componentQtyNeeded.toFixed(2)} kg, tersedia ${roastedItem.Stock_Kg.toFixed(2)} kg.`);
+            
+            // Deduct stock
+            roastedItem.Stock_Kg -= componentQtyNeeded;
+            roastedItem.Total_Value = roastedItem.Stock_Kg * roastedItem.HPP_Per_Kg;
+
+            // Add to weighted HPP
+            calculatedHpp += (componentQtyNeeded * roastedItem.HPP_Per_Kg);
+        }
+
+        const finalHppPerKg = blendData.totalQty > 0 ? calculatedHpp / blendData.totalQty : 0;
+        const totalValue = blendData.totalQty * finalHppPerKg;
+
+        // Add or update blend in store inventory
+        const storeIndex = updatedDb.storeInventory.findIndex(s => s.Nama_Produk === blendData.name);
+        if (storeIndex > -1) {
+            const storeItem = updatedDb.storeInventory[storeIndex];
+            const oldStock = storeItem.Stock_Kg;
+            const oldValue = storeItem.Total_Value;
+
+            const newStock = oldStock + blendData.totalQty;
+            const newValue = oldValue + totalValue;
+            
+            storeItem.Stock_Kg = newStock;
+            storeItem.Total_Value = newValue;
+            storeItem.HPP_Per_Kg = newStock > 0 ? newValue / newStock : 0;
+            storeItem.Harga_Jual_Kg = blendData.sellPrice;
+            storeItem.Kategori = 'Blend';
+        } else {
+            updatedDb.storeInventory.push({
+                id: blendData.name.replace(/\s+/g, '-').toLowerCase(),
+                Nama_Produk: blendData.name,
+                Kategori: 'Blend',
+                Stock_Kg: blendData.totalQty,
+                HPP_Per_Kg: finalHppPerKg,
+                Harga_Jual_Kg: blendData.sellPrice,
+                Total_Value: totalValue,
+            });
+        }
+
+        updatedDb.transactions.push({
+            id: `trx-${Date.now()}-blend`,
+            Tanggal: new Date().toISOString().split('T')[0],
+            Deskripsi: `Pembuatan blend: ${blendData.name}`,
+            Referensi: `BLND-${Date.now()}`,
+            Kategori: 'Produksi Internal',
+            Debit: 0,
+            Kredit: 0, // Internal transfer, no immediate monetary transaction
+        });
+
+        revalidatePath('/');
+        return { message: `Blend '${blendData.name}' berhasil dibuat!`, status: 'success', data: updatedDb };
+    } catch (e: any) {
+        console.error("Error creating blend:", e);
+        return { message: `Gagal membuat blend: ${e.message}`, status: 'error' };
     }
 }

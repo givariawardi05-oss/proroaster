@@ -22,8 +22,9 @@ import {
 import { StatCard } from '@/components/stat-card';
 import { formatRupiah } from '@/lib/utils';
 import type { GlobalData, StoreInventoryItem } from '@/lib/definitions';
-import { Package, DollarSign, CheckCircle, AlertTriangle, PlusCircle } from 'lucide-react';
+import { Package, DollarSign, CheckCircle, AlertTriangle, PlusCircle, Blend } from 'lucide-react';
 import { ManualStockForm } from './manual-stock-form';
+import { BlendForm } from './blend-form';
 
 interface StoreInventoryProps {
   data: GlobalData;
@@ -34,7 +35,8 @@ type FilterType = 'all' | 'low' | 'available';
 
 export function StoreInventory({ data, onDataChange }: StoreInventoryProps) {
   const [filter, setFilter] = useState<FilterType>('all');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isManualDialogOpen, setIsManualDialogOpen] = useState(false);
+  const [isBlendDialogOpen, setIsBlendDialogOpen] = useState(false);
   const lowStockLimit = data.settings.stock_low_limit || 10;
 
   const stats = useMemo(() => {
@@ -60,9 +62,14 @@ export function StoreInventory({ data, onDataChange }: StoreInventoryProps) {
     return { text: 'Tersedia', variant: 'outline', className: 'border-green-500 bg-green-50 text-green-700' };
   };
   
-  const handleFormSubmit = (newData: GlobalData | Omit<GlobalData, 'nextIds' | 'currentBalance'>) => {
+  const handleManualFormSubmit = (newData: GlobalData | Omit<GlobalData, 'nextIds' | 'currentBalance'>) => {
     onDataChange(newData);
-    setIsDialogOpen(false);
+    setIsManualDialogOpen(false);
+  }
+  
+  const handleBlendFormSubmit = (newData: GlobalData | Omit<GlobalData, 'nextIds' | 'currentBalance'>) => {
+    onDataChange(newData);
+    setIsBlendDialogOpen(false);
   }
 
   return (
@@ -70,25 +77,45 @@ export function StoreInventory({ data, onDataChange }: StoreInventoryProps) {
       <header className="flex justify-between items-start">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Inventaris Toko</h2>
-          <p className="text-muted-foreground">Stok siap jual di toko, termasuk merchandise.</p>
+          <p className="text-muted-foreground">Stok siap jual di toko, termasuk merchandise dan produk blend.</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Tambah Produk Manual
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Tambah/Update Produk Manual</DialogTitle>
-              <DialogDescription>
-                Gunakan ini untuk menambahkan item non-roasting seperti merchandise atau untuk menyesuaikan stok.
-              </DialogDescription>
-            </DialogHeader>
-            <ManualStockForm onFormSubmit={handleFormSubmit} currentData={data} />
-          </DialogContent>
-        </Dialog>
+        <div className="flex gap-2">
+            <Dialog open={isBlendDialogOpen} onOpenChange={setIsBlendDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Blend className="mr-2 h-4 w-4" />
+                  Buat Blend Produk
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-3xl">
+                <DialogHeader>
+                  <DialogTitle>Buat Produk Blend Baru</DialogTitle>
+                  <DialogDescription>
+                    Campurkan beberapa produk dari inventaris roasted untuk membuat produk baru.
+                  </DialogDescription>
+                </DialogHeader>
+                <BlendForm onFormSubmit={handleBlendFormSubmit} currentData={data} />
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={isManualDialogOpen} onOpenChange={setIsManualDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Tambah Produk Manual
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Tambah/Update Produk Manual</DialogTitle>
+                  <DialogDescription>
+                    Gunakan ini untuk menambahkan item non-roasting atau untuk menyesuaikan stok.
+                  </DialogDescription>
+                </DialogHeader>
+                <ManualStockForm onFormSubmit={handleManualFormSubmit} currentData={data} />
+              </DialogContent>
+            </Dialog>
+        </div>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -127,7 +154,9 @@ export function StoreInventory({ data, onDataChange }: StoreInventoryProps) {
                    return(
                     <TableRow key={item.id}>
                         <TableCell className="font-medium">{item.Nama_Produk}</TableCell>
-                        <TableCell>{item.Kategori}</TableCell>
+                        <TableCell>
+                          <Badge variant={item.Kategori === 'Blend' ? 'default' : 'secondary'}>{item.Kategori}</Badge>
+                        </TableCell>
                         <TableCell className="text-right">{item.Stock_Kg.toFixed(2)}</TableCell>
                         <TableCell className="text-right">{formatRupiah(item.HPP_Per_Kg)}</TableCell>
                         <TableCell className="text-right font-semibold">{formatRupiah(item.Harga_Jual_Kg)}</TableCell>

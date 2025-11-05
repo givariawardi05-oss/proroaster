@@ -8,7 +8,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -27,7 +27,7 @@ interface SalesProps {
   data: GlobalData;
 }
 
-const statusVariant: { [key: string]: 'destructive' | 'warning' | 'secondary' | 'default' } = {
+const statusVariant: { [key: string]: 'destructive' | 'secondary' | 'default' } = {
     'Draft': 'secondary',
     'Sent': 'default',
     'Paid': 'default',
@@ -39,6 +39,8 @@ const statusColor: { [key: string]: string } = {
     'Paid': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
     'Lunas': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
     'Sent': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+    'Overdue': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+    'Draft': 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
 }
 
 
@@ -48,11 +50,7 @@ export function Sales({ data }: SalesProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-start">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Invoice Penjualan</h2>
-          <p className="text-muted-foreground">Kelola invoice penjualan dan kurangi stok toko.</p>
-        </div>
+      <div className="flex justify-end items-start">
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -74,6 +72,10 @@ export function Sales({ data }: SalesProps) {
       </div>
 
       <Card>
+        <CardHeader>
+            <CardTitle>Riwayat Invoice Penjualan</CardTitle>
+        </CardHeader>
+        <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
@@ -81,9 +83,9 @@ export function Sales({ data }: SalesProps) {
               <TableHead>Customer</TableHead>
               <TableHead>Tanggal</TableHead>
               <TableHead>Jatuh Tempo</TableHead>
-              <TableHead>Total</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Aksi</TableHead>
+              <TableHead className="text-right">Total</TableHead>
+              <TableHead className="text-center">Status</TableHead>
+              <TableHead className="text-right">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -94,14 +96,14 @@ export function Sales({ data }: SalesProps) {
                   <TableCell>{inv.Customer}</TableCell>
                   <TableCell>{new Date(inv.Tanggal).toLocaleDateString('id-ID')}</TableCell>
                   <TableCell>{new Date(inv.Jatuh_Tempo).toLocaleDateString('id-ID')}</TableCell>
-                  <TableCell>{formatRupiah(inv.Total_Invoice)}</TableCell>
-                  <TableCell>
-                    <Badge variant={statusVariant[inv.Status_Bayar] || 'secondary'} className={statusColor[inv.Status_Bayar]}>
+                  <TableCell className="text-right">{formatRupiah(inv.Total_Invoice)}</TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant={statusVariant[inv.Status_Bayar] || 'secondary'} className={cn(statusColor[inv.Status_Bayar])}>
                       {inv.Status_Bayar}
                     </Badge>
                   </TableCell>
-                  <TableCell>
-                    <Button variant="outline" size="sm">Cetak</Button>
+                  <TableCell className="text-right">
+                    <Button variant="outline" size="sm">Detail</Button>
                   </TableCell>
                 </TableRow>
               ))
@@ -114,6 +116,7 @@ export function Sales({ data }: SalesProps) {
             )}
           </TableBody>
         </Table>
+        </CardContent>
       </Card>
     </div>
   );

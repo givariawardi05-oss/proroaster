@@ -17,6 +17,10 @@ import { Assets } from './sections/assets';
 import { BalanceSheet } from './sections/balance-sheet';
 import { Settings } from './sections/settings';
 import { Sync } from './sections/sync';
+import { Input } from './ui/input';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Button } from './ui/button';
+import { Bell, Search } from 'lucide-react';
 
 interface MainLayoutProps {
   initialData: GlobalData;
@@ -24,6 +28,22 @@ interface MainLayoutProps {
 
 export default function MainLayout({ initialData }: MainLayoutProps) {
   const [activeSection, setActiveSection] = useState<SectionName>('dashboard');
+  
+  const sectionTitles: Record<SectionName, string> = {
+    dashboard: 'Dashboard',
+    purchases: 'Faktur Pembelanjaan',
+    warehouse: 'Gudang Green Beans',
+    roasting: 'Manajemen Roasting',
+    'roasted-inventory': 'Inventaris Hasil Roasting',
+    'store-inventory': 'Inventaris Toko',
+    sales: 'Invoice Penjualan',
+    transactions: 'Transaksi',
+    reports: 'Laporan',
+    assets: 'Data Aset',
+    'balance-sheet': 'Neraca',
+    settings: 'Pengaturan',
+    sync: 'Sinkronisasi & Alat',
+  };
 
   const renderSection = () => {
     switch (activeSection) {
@@ -61,12 +81,35 @@ export default function MainLayout({ initialData }: MainLayoutProps) {
   return (
     <>
       <AppSidebar activeSection={activeSection} setActiveSection={setActiveSection} />
-      <SidebarInset className="max-h-screen overflow-y-auto">
-        <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background/80 px-6 backdrop-blur-md">
+      <SidebarInset className="max-h-screen overflow-y-auto bg-background">
+        <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-6 backdrop-blur-sm">
             <SidebarTrigger className="lg:hidden" />
-            <h1 className="text-xl font-semibold capitalize">{activeSection.replace('-', ' ')}</h1>
+            <div className='relative w-full max-w-sm'>
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Cari..." className="pl-9 bg-input" />
+            </div>
+            <div className='ml-auto flex items-center gap-4'>
+                <p className='text-sm text-muted-foreground hidden md:block'>
+                    {new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                </p>
+                <Button variant="ghost" size="icon" className="rounded-full">
+                    <Bell className="h-5 w-5"/>
+                </Button>
+                 <Avatar>
+                    <AvatarImage src="https://i.pravatar.cc/150?u=a042581f4e29026704d" />
+                    <AvatarFallback>U</AvatarFallback>
+                </Avatar>
+            </div>
         </header>
         <main className="p-4 sm:p-6 lg:p-8">
+            <div className="mb-6">
+                <h1 className="text-3xl font-bold tracking-tight">
+                  {sectionTitles[activeSection]}
+                </h1>
+                <p className="text-muted-foreground">
+                  {activeSection === 'dashboard' ? `Halo, Barbara! 👋 Ini yang terjadi di roastery Anda bulan ini.` : 'Kelola data dan lihat informasi terkait.'}
+                </p>
+            </div>
             {renderSection()}
         </main>
       </SidebarInset>

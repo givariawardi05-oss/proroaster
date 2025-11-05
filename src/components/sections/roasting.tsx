@@ -8,7 +8,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -33,11 +33,7 @@ export function Roasting({ data }: RoastingProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-start">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Management Roasting</h2>
-          <p className="text-muted-foreground">Kelola batch roasting dan kalkulasi HPP.</p>
-        </div>
+      <div className="flex justify-end items-start">
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -59,18 +55,22 @@ export function Roasting({ data }: RoastingProps) {
       </div>
 
       <Card>
+        <CardHeader>
+            <CardTitle>Riwayat Batch Roasting</CardTitle>
+        </CardHeader>
+        <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Batch ID</TableHead>
               <TableHead>Tanggal</TableHead>
               <TableHead>Green Beans</TableHead>
-              <TableHead>Input</TableHead>
-              <TableHead>Output</TableHead>
+              <TableHead className="text-right">Input</TableHead>
+              <TableHead className="text-right">Output</TableHead>
               <TableHead>Profil</TableHead>
-              <TableHead>HPP/kg</TableHead>
-              <TableHead>Jual/kg</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead className="text-right">HPP/kg</TableHead>
+              <TableHead className="text-right">Jual/kg</TableHead>
+              <TableHead className="text-center">Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -80,12 +80,12 @@ export function Roasting({ data }: RoastingProps) {
                   <TableCell className="font-medium">{batch.Batch_ID}</TableCell>
                   <TableCell>{new Date(batch.Tanggal).toLocaleDateString('id-ID')}</TableCell>
                   <TableCell>{batch.Green_Beans}</TableCell>
-                  <TableCell>{batch.Input_Kg.toFixed(1)} kg</TableCell>
-                  <TableCell>{batch.Output_Kg.toFixed(2)} kg</TableCell>
+                  <TableCell className="text-right">{batch.Input_Kg.toFixed(1)} kg</TableCell>
+                  <TableCell className="text-right">{batch.Output_Kg.toFixed(2)} kg</TableCell>
                   <TableCell>{batch.Profile} ({batch.Yield_Persen})</TableCell>
-                  <TableCell>{formatRupiah(batch.HPP_Per_Kg)}</TableCell>
-                  <TableCell>{formatRupiah(batch.Harga_Jual_Kg)}</TableCell>
-                  <TableCell>
+                  <TableCell className="text-right">{formatRupiah(batch.HPP_Per_Kg)}</TableCell>
+                  <TableCell className="text-right">{formatRupiah(batch.Harga_Jual_Kg)}</TableCell>
+                  <TableCell className="text-center">
                     <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
                       {batch.Status}
                     </Badge>
@@ -101,6 +101,7 @@ export function Roasting({ data }: RoastingProps) {
             )}
           </TableBody>
         </Table>
+        </CardContent>
       </Card>
     </div>
   );

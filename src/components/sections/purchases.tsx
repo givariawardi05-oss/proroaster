@@ -8,7 +8,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -32,11 +32,7 @@ export function Purchases({ data }: PurchasesProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-start">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Faktur Pembelanjaan</h2>
-          <p className="text-muted-foreground">Kelola pembelian green beans Anda.</p>
-        </div>
+      <div className="flex justify-end items-start">
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -57,6 +53,10 @@ export function Purchases({ data }: PurchasesProps) {
       </div>
 
       <Card>
+        <CardHeader>
+          <CardTitle>Daftar Faktur Pembelian</CardTitle>
+        </CardHeader>
+        <CardContent>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -64,9 +64,9 @@ export function Purchases({ data }: PurchasesProps) {
                 <TableHead>No. Faktur</TableHead>
                 <TableHead>Supplier</TableHead>
                 <TableHead>Tanggal</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Aksi</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+                <TableHead className="text-center">Status</TableHead>
+                <TableHead className="text-right">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -76,22 +76,22 @@ export function Purchases({ data }: PurchasesProps) {
                     <TableCell className="font-medium">{inv.No_Faktur}</TableCell>
                     <TableCell>{inv.Supplier}</TableCell>
                     <TableCell>{new Date(inv.Tanggal).toLocaleDateString('id-ID')}</TableCell>
-                    <TableCell>{formatRupiah(inv.Total_Faktur)}</TableCell>
-                    <TableCell>
+                    <TableCell className="text-right">{formatRupiah(inv.Total_Faktur)}</TableCell>
+                    <TableCell className="text-center">
                       <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
                         {inv.Status}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-right">
                       <Button variant="outline" size="sm">
-                        Cetak
+                        Detail
                       </Button>
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center">
+                  <TableCell colSpan={6} className="text-center h-24">
                     Belum ada faktur pembelian.
                   </TableCell>
                 </TableRow>
@@ -99,6 +99,7 @@ export function Purchases({ data }: PurchasesProps) {
             </TableBody>
           </Table>
         </div>
+        </CardContent>
       </Card>
     </div>
   );

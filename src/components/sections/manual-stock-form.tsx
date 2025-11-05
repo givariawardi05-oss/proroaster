@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -31,6 +31,7 @@ interface ManualStockFormProps {
 
 export function ManualStockForm({ onFormSubmit, currentData }: ManualStockFormProps) {
   const [state, formAction, isPending] = useActionState(addManualStock.bind(null, currentData), null);
+  const [isTransitioning, startTransition] = useTransition();
 
   const {
     register,
@@ -63,8 +64,18 @@ export function ManualStockForm({ onFormSubmit, currentData }: ManualStockFormPr
     }
   }, [state, onFormSubmit, reset]);
   
+  const onFormSubmitWithData = (data: ManualStockFormValues) => {
+    startTransition(() => {
+        const formData = new FormData();
+        Object.entries(data).forEach(([key, value]) => {
+            formData.append(key, String(value));
+        });
+        formAction(formData);
+    });
+  }
+
   return (
-    <form action={formAction} onSubmit={handleSubmit(() => formAction(new FormData(document.querySelector('form')!)))} className="space-y-4">
+    <form onSubmit={handleSubmit(onFormSubmitWithData)} className="space-y-4">
       <div>
         <Label htmlFor="productName">Nama Produk</Label>
         <Input id="productName" {...register("productName")} placeholder="contoh: Gayo Wine" />
@@ -100,7 +111,7 @@ export function ManualStockForm({ onFormSubmit, currentData }: ManualStockFormPr
         </div>
       </div>
       <div className="flex justify-end pt-4">
-        <SubmitButton pending={isPending} pendingText="Menyimpan...">Simpan Produk</SubmitButton>
+        <SubmitButton pending={isPending || isTransitioning} pendingText="Menyimpan...">Simpan Produk</SubmitButton>
       </div>
     </form>
   );

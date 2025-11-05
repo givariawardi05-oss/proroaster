@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect } from 'react';
+import React, { useEffect, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -27,6 +27,7 @@ type SettingsFormValues = z.infer<typeof settingsSchema>;
 
 export function Settings({ data, onDataChange }: SettingsProps) {
   const [state, formAction, isPending] = useActionState(saveSettings.bind(null, data), null);
+  const [isTransitioning, startTransition] = useTransition();
 
   const {
     register,
@@ -55,6 +56,16 @@ export function Settings({ data, onDataChange }: SettingsProps) {
     }
   }, [state, onDataChange]);
 
+  const onFormSubmitWithData = (data: SettingsFormValues) => {
+    startTransition(() => {
+        const formData = new FormData();
+        Object.entries(data).forEach(([key, value]) => {
+            formData.append(key, String(value));
+        });
+        formAction(formData);
+    });
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -68,7 +79,7 @@ export function Settings({ data, onDataChange }: SettingsProps) {
           <CardDescription>Perubahan pada pengaturan akan mempengaruhi kalkulasi di seluruh sistem.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={formAction} onSubmit={handleSubmit(() => formAction(new FormData(document.querySelector('form')!)))} className="space-y-6 max-w-2xl">
+          <form onSubmit={handleSubmit(onFormSubmitWithData)} className="space-y-6 max-w-2xl">
             <div>
               <Label htmlFor="company_name">Nama Perusahaan</Label>
               <Input id="company_name" {...register('company_name')} />
@@ -91,7 +102,7 @@ export function Settings({ data, onDataChange }: SettingsProps) {
             </div>
 
             <div className="pt-4">
-              <SubmitButton pending={isPending} pendingText="Menyimpan...">Simpan Pengaturan</SubmitButton>
+              <SubmitButton pending={isPending || isTransitioning} pendingText="Menyimpan...">Simpan Pengaturan</SubmitButton>
             </div>
           </form>
         </CardContent>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useTransition } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -47,6 +47,7 @@ interface SalesFormProps {
 
 export function SalesForm({ nextInvoiceNumber, availableProducts, onFormSubmit, currentData }: SalesFormProps) {
   const [state, formAction, isPending] = useActionState(createSale.bind(null, currentData), null);
+  const [isTransitioning, startTransition] = useTransition();
 
   const {
     register,
@@ -115,9 +116,22 @@ export function SalesForm({ nextInvoiceNumber, availableProducts, onFormSubmit, 
     }
   };
 
+  const onFormSubmitWithData = (data: SalesFormValues) => {
+    startTransition(() => {
+        const formData = new FormData();
+        Object.entries(data).forEach(([key, value]) => {
+            if (key === 'items') {
+                formData.append(key, JSON.stringify(value));
+            } else {
+                formData.append(key, String(value));
+            }
+        });
+        formAction(formData);
+    });
+  }
   
   return (
-    <form action={formAction} onSubmit={handleSubmit(() => formAction(new FormData(document.querySelector('form')!)))} className="space-y-4">
+    <form onSubmit={handleSubmit(onFormSubmitWithData)} className="space-y-4">
       <input type="hidden" {...register('total')} />
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div><Label>No. Invoice</Label><Input {...register("invoiceNumber")} readOnly /></div>
@@ -188,7 +202,7 @@ export function SalesForm({ nextInvoiceNumber, availableProducts, onFormSubmit, 
         </div>
       </div>
       <div className="flex justify-end pt-4">
-        <SubmitButton pending={isPending} pendingText="Menyimpan...">Simpan Invoice</SubmitButton>
+        <SubmitButton pending={isPending || isTransitioning} pendingText="Menyimpan...">Simpan Invoice</SubmitButton>
       </div>
     </form>
   );

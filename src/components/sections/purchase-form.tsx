@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useTransition } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -40,6 +40,7 @@ interface PurchaseFormProps {
 
 export function PurchaseForm({ nextInvoiceNumber, onFormSubmit, currentData }: PurchaseFormProps) {
   const [state, formAction, isPending] = useActionState(createPurchase.bind(null, currentData), null);
+  const [isTransitioning, startTransition] = useTransition();
 
   const {
     register,
@@ -93,19 +94,21 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit, currentData }: P
   }, [state, onFormSubmit, reset]);
   
   const onFormSubmitWithData = (data: PurchaseFormValues) => {
-    const formData = new FormData();
-    Object.entries(data).forEach(([key, value]) => {
-        if (key === 'items') {
-            formData.append(key, JSON.stringify(value));
-        } else {
-            formData.append(key, String(value));
-        }
+    startTransition(() => {
+        const formData = new FormData();
+        Object.entries(data).forEach(([key, value]) => {
+            if (key === 'items') {
+                formData.append(key, JSON.stringify(value));
+            } else {
+                formData.append(key, String(value));
+            }
+        });
+        formAction(formData);
     });
-    formAction(formData);
   }
 
   return (
-    <form action={formAction} onSubmit={handleSubmit(onFormSubmitWithData)} className="space-y-4">
+    <form onSubmit={handleSubmit(onFormSubmitWithData)} className="space-y-4">
       <input type="hidden" {...register('total')} />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
@@ -176,7 +179,7 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit, currentData }: P
       </div>
       
       <div className="flex justify-end gap-2 pt-4">
-         <SubmitButton pending={isPending} pendingText="Menyimpan...">Simpan &amp; Masuk Warehouse</SubmitButton>
+         <SubmitButton pending={isPending || isTransitioning} pendingText="Menyimpan...">Simpan &amp; Masuk Warehouse</SubmitButton>
       </div>
     </form>
   );

@@ -32,6 +32,7 @@ interface AssetFormProps {
 
 export function AssetForm({ onFormSubmit, currentData }: AssetFormProps) {
   const [state, formAction, isPending] = useActionState(createAsset.bind(null, currentData), null);
+  const [isTransitioning, startTransition] = useTransition();
 
   const {
     register,
@@ -59,8 +60,18 @@ export function AssetForm({ onFormSubmit, currentData }: AssetFormProps) {
     }
   }, [state, onFormSubmit, reset]);
   
+  const onFormSubmitWithData = (data: AssetFormValues) => {
+    startTransition(() => {
+      const formData = new FormData();
+      Object.entries(data).forEach(([key, value]) => {
+          formData.append(key, String(value));
+      });
+      formAction(formData);
+    });
+  }
+  
   return (
-    <form action={formAction} onSubmit={handleSubmit((data) => formAction(new FormData(document.querySelector('form')!)))} className="space-y-4">
+    <form onSubmit={handleSubmit(onFormSubmitWithData)} className="space-y-4">
         <div>
           <Label htmlFor="name">Nama Aset</Label>
           <Input id="name" {...register("name")} />
@@ -106,7 +117,7 @@ export function AssetForm({ onFormSubmit, currentData }: AssetFormProps) {
         </div>
 
       <div className="flex justify-end pt-4">
-        <SubmitButton pending={isPending} pendingText="Menyimpan...">Simpan Aset</SubmitButton>
+        <SubmitButton pending={isPending || isTransitioning} pendingText="Menyimpan...">Simpan Aset</SubmitButton>
       </div>
     </form>
   );

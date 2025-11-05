@@ -64,10 +64,6 @@ const SheetContent = React.forwardRef<
       className={cn(sheetVariants({ side }), className)}
       {...props}
     >
-      <VisuallyHidden>
-        <SheetPrimitive.Title>{props['aria-label'] || 'Sheet'}</SheetPrimitive.Title>
-        <SheetPrimitive.Description>{props['aria-describedby'] || 'A sheet panel that slides in from the edge of the screen.'}</SheetPrimitive.Description>
-      </VisuallyHidden>
       {children}
       <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
         <X className="h-4 w-4" />
@@ -129,21 +125,6 @@ const SheetDescription = React.forwardRef<
   />
 ))
 SheetDescription.displayName = SheetPrimitive.Description.displayName
-
-const VisuallyHidden = React.forwardRef<
-  HTMLSpanElement,
-  React.HTMLAttributes<HTMLSpanElement>
->(({ className, ...props }, ref) => (
-  <span
-    ref={ref}
-    className={cn(
-      "absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0",
-      className
-    )}
-    {...props}
-  />
-))
-VisuallyHidden.displayName = "VisuallyHidden"
 
 export {
   Sheet,

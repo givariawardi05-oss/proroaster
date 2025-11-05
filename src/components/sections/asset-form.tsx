@@ -35,7 +35,8 @@ export function AssetForm({ onFormSubmit }: AssetFormProps) {
     register,
     handleSubmit,
     control,
-    formState: { errors },
+    reset,
+    formState: { errors, isSubmitting },
   } = useForm<AssetFormValues>({
     resolver: zodResolver(assetSchema),
     defaultValues: {
@@ -48,14 +49,23 @@ export function AssetForm({ onFormSubmit }: AssetFormProps) {
   useEffect(() => {
     if (state?.status === "success") {
       toast({ title: "Sukses!", description: state.message });
+      reset();
       onFormSubmit();
     } else if (state?.status === "error") {
       toast({ title: "Error!", description: state.message, variant: "destructive" });
     }
-  }, [state, onFormSubmit]);
+  }, [state, onFormSubmit, reset]);
+  
+  const onSubmit = (data: AssetFormValues) => {
+    const formData = new FormData();
+    Object.keys(data).forEach(key => {
+        formData.append(key, (data as any)[key]);
+    });
+    formAction(formData);
+  };
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
           <Label htmlFor="name">Nama Aset</Label>
           <Input id="name" {...register("name")} />
@@ -101,7 +111,7 @@ export function AssetForm({ onFormSubmit }: AssetFormProps) {
         </div>
 
       <div className="flex justify-end pt-4">
-        <SubmitButton pendingText="Menyimpan...">Simpan Aset</SubmitButton>
+        <SubmitButton pending={isSubmitting} pendingText="Menyimpan...">Simpan Aset</SubmitButton>
       </div>
     </form>
   );

@@ -45,7 +45,8 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit }: PurchaseFormPr
     handleSubmit,
     watch,
     setValue,
-    formState: { errors },
+    reset,
+    formState: { errors, isSubmitting },
   } = useForm<PurchaseFormValues>({
     resolver: zodResolver(purchaseSchema),
     defaultValues: {
@@ -70,6 +71,7 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit }: PurchaseFormPr
   useEffect(() => {
     if (state?.status === "success") {
       toast({ title: "Sukses!", description: state.message });
+      reset();
       onFormSubmit();
     } else if (state?.status === "error") {
       toast({
@@ -78,11 +80,20 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit }: PurchaseFormPr
         variant: "destructive",
       });
     }
-  }, [state, onFormSubmit]);
+  }, [state, onFormSubmit, reset]);
 
+  const onSubmit = (data: PurchaseFormValues) => {
+    const formData = new FormData();
+    formData.append('supplier', data.supplier);
+    formData.append('date', data.date);
+    formData.append('invoiceNumber', data.invoiceNumber);
+    formData.append('total', data.total.toString());
+    formData.append('items', JSON.stringify(data.items));
+    formAction(formData);
+  };
   
   return (
-    <form action={formAction} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <Label htmlFor="supplier">Supplier</Label>
@@ -105,7 +116,6 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit }: PurchaseFormPr
         <input type="hidden" {...register('total')} />
         {fields.map((field, index) => (
           <div key={field.id} className="grid grid-cols-12 gap-2 items-start">
-            <input type="hidden" {...register(`items.${index}.name` as const)} />
             <div className="col-span-4">
               <Label htmlFor={`items.${index}.name`} className="sr-only">Nama Green Beans</Label>
               <Input placeholder="Nama Green Beans" {...register(`items.${index}.name`)} />
@@ -153,7 +163,7 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit }: PurchaseFormPr
       </div>
       
       <div className="flex justify-end gap-2">
-        <SubmitButton pendingText="Menyimpan...">Simpan & Masuk Warehouse</SubmitButton>
+        <SubmitButton pending={isSubmitting} pendingText="Menyimpan...">Simpan & Masuk Warehouse</SubmitButton>
       </div>
     </form>
   );

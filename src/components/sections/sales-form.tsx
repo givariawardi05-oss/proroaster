@@ -54,7 +54,8 @@ export function SalesForm({ nextInvoiceNumber, availableProducts, onFormSubmit }
     handleSubmit,
     watch,
     setValue,
-    formState: { errors },
+    reset,
+    formState: { errors, isSubmitting },
   } = useForm<SalesFormValues>({
     resolver: zodResolver(salesSchema),
     defaultValues: {
@@ -97,11 +98,12 @@ export function SalesForm({ nextInvoiceNumber, availableProducts, onFormSubmit }
   useEffect(() => {
     if (state?.status === "success") {
       toast({ title: "Sukses!", description: state.message });
+      reset();
       onFormSubmit();
     } else if (state?.status === "error") {
       toast({ title: "Error!", description: state.message, variant: "destructive" });
     }
-  }, [state, onFormSubmit]);
+  }, [state, onFormSubmit, reset]);
 
   const handleProductChange = (index: number, productName: string) => {
     const product = availableProducts.find(p => p.Nama_Produk === productName);
@@ -110,9 +112,21 @@ export function SalesForm({ nextInvoiceNumber, availableProducts, onFormSubmit }
       setValue(`items.${index}.price`, product.Harga_Jual_Kg);
     }
   };
+
+  const onSubmit = (data: SalesFormValues) => {
+    const formData = new FormData();
+    Object.keys(data).forEach(key => {
+        if (key === 'items') {
+            formData.append(key, JSON.stringify(data[key]));
+        } else {
+            formData.append(key, (data as any)[key]);
+        }
+    });
+    formAction(formData);
+  };
   
   return (
-    <form action={formAction} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <input type="hidden" {...register('total')} />
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div><Label>No. Invoice</Label><Input {...register("invoiceNumber")} readOnly /></div>
@@ -183,7 +197,7 @@ export function SalesForm({ nextInvoiceNumber, availableProducts, onFormSubmit }
         </div>
       </div>
       <div className="flex justify-end pt-4">
-        <SubmitButton pendingText="Menyimpan...">Simpan Invoice</SubmitButton>
+        <SubmitButton pending={isSubmitting} pendingText="Menyimpan...">Simpan Invoice</SubmitButton>
       </div>
     </form>
   );

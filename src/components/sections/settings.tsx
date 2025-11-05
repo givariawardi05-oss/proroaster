@@ -1,4 +1,4 @@
-'use client';
+"use client";
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -30,7 +30,7 @@ export function Settings({ data }: SettingsProps) {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
     defaultValues: {
@@ -52,6 +52,14 @@ export function Settings({ data }: SettingsProps) {
     }
   }, [state]);
 
+  const onSubmit = (data: SettingsFormValues) => {
+    const formData = new FormData();
+    Object.keys(data).forEach(key => {
+        formData.append(key, (data as any)[key]);
+    });
+    formAction(formData);
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -65,7 +73,7 @@ export function Settings({ data }: SettingsProps) {
           <CardDescription>Perubahan pada pengaturan akan mempengaruhi kalkulasi di seluruh sistem.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={formAction} className="space-y-6 max-w-2xl">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-2xl">
             <div>
               <Label htmlFor="company_name">Nama Perusahaan</Label>
               <Input id="company_name" {...register('company_name')} />
@@ -88,7 +96,7 @@ export function Settings({ data }: SettingsProps) {
             </div>
 
             <div className="pt-4">
-              <SubmitButton pendingText="Menyimpan...">Simpan Pengaturan</SubmitButton>
+              <SubmitButton pending={isSubmitting} pendingText="Menyimpan...">Simpan Pengaturan</SubmitButton>
             </div>
           </form>
         </CardContent>

@@ -47,7 +47,8 @@ export function RoastingForm({ nextBatchId, availableBeans, onFormSubmit }: Roas
     watch,
     control,
     setValue,
-    formState: { errors },
+    reset,
+    formState: { errors, isSubmitting },
   } = useForm<RoastingFormValues>({
     resolver: zodResolver(roastingSchema),
     defaultValues: {
@@ -88,6 +89,7 @@ export function RoastingForm({ nextBatchId, availableBeans, onFormSubmit }: Roas
   useEffect(() => {
     if (state?.status === "success") {
       toast({ title: "Sukses!", description: state.message });
+      reset();
       onFormSubmit();
     } else if (state?.status === "error") {
       toast({
@@ -96,11 +98,18 @@ export function RoastingForm({ nextBatchId, availableBeans, onFormSubmit }: Roas
         variant: "destructive",
       });
     }
-  }, [state, onFormSubmit]);
+  }, [state, onFormSubmit, reset]);
   
+  const onSubmit = (data: RoastingFormValues) => {
+    const formData = new FormData();
+    Object.keys(data).forEach(key => {
+        formData.append(key, (data as any)[key]);
+    });
+    formAction(formData);
+  };
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <input type="hidden" {...register('hppPerKg')} />
       {/* Inputs */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -181,7 +190,7 @@ export function RoastingForm({ nextBatchId, availableBeans, onFormSubmit }: Roas
       </div>
       
       <div className="flex justify-end gap-2 pt-4">
-        <SubmitButton pendingText="Memproses...">Proses Roasting</SubmitButton>
+        <SubmitButton pending={isSubmitting} pendingText="Memproses...">Proses Roasting</SubmitButton>
       </div>
     </form>
   );

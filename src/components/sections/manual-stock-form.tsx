@@ -34,7 +34,8 @@ export function ManualStockForm({ onFormSubmit }: ManualStockFormProps) {
     register,
     handleSubmit,
     setValue,
-    formState: { errors },
+    reset,
+    formState: { errors, isSubmitting },
   } = useForm<ManualStockFormValues>({
     resolver: zodResolver(manualStockSchema),
     defaultValues: {
@@ -48,6 +49,7 @@ export function ManualStockForm({ onFormSubmit }: ManualStockFormProps) {
   useEffect(() => {
     if (state?.status === "success") {
       toast({ title: "Sukses!", description: state.message });
+      reset();
       onFormSubmit();
     } else if (state?.status === "error") {
       toast({
@@ -56,10 +58,18 @@ export function ManualStockForm({ onFormSubmit }: ManualStockFormProps) {
         variant: "destructive",
       });
     }
-  }, [state, onFormSubmit]);
+  }, [state, onFormSubmit, reset]);
+  
+  const onSubmit = (data: ManualStockFormValues) => {
+    const formData = new FormData();
+    Object.keys(data).forEach(key => {
+        formData.append(key, (data as any)[key]);
+    });
+    formAction(formData);
+  };
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div>
         <Label htmlFor="productName">Nama Produk</Label>
         <Input id="productName" {...register("productName")} placeholder="contoh: Gayo Wine" />
@@ -95,7 +105,7 @@ export function ManualStockForm({ onFormSubmit }: ManualStockFormProps) {
         </div>
       </div>
       <div className="flex justify-end pt-4">
-        <SubmitButton pendingText="Menyimpan...">Simpan Produk</SubmitButton>
+        <SubmitButton pending={isSubmitting} pendingText="Menyimpan...">Simpan Produk</SubmitButton>
       </div>
     </form>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useTransition } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -30,13 +30,14 @@ interface AssetFormProps {
 
 export function AssetForm({ onFormSubmit }: AssetFormProps) {
   const [state, formAction] = useActionState(createAsset, null);
+  const [isPending, startTransition] = useTransition();
 
   const {
     register,
     handleSubmit,
     control,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<AssetFormValues>({
     resolver: zodResolver(assetSchema),
     defaultValues: {
@@ -61,7 +62,9 @@ export function AssetForm({ onFormSubmit }: AssetFormProps) {
     Object.keys(data).forEach(key => {
         formData.append(key, (data as any)[key]);
     });
-    formAction(formData);
+    startTransition(() => {
+      formAction(formData);
+    });
   };
 
   return (
@@ -111,7 +114,7 @@ export function AssetForm({ onFormSubmit }: AssetFormProps) {
         </div>
 
       <div className="flex justify-end pt-4">
-        <SubmitButton pending={isSubmitting} pendingText="Menyimpan...">Simpan Aset</SubmitButton>
+        <SubmitButton pending={isPending} pendingText="Menyimpan...">Simpan Aset</SubmitButton>
       </div>
     </form>
   );

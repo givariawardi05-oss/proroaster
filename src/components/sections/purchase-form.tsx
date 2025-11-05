@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useTransition } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -38,6 +38,7 @@ interface PurchaseFormProps {
 
 export function PurchaseForm({ nextInvoiceNumber, onFormSubmit }: PurchaseFormProps) {
   const [state, formAction] = useActionState(createPurchase, null);
+  const [isPending, startTransition] = useTransition();
 
   const {
     register,
@@ -46,7 +47,7 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit }: PurchaseFormPr
     watch,
     setValue,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<PurchaseFormValues>({
     resolver: zodResolver(purchaseSchema),
     defaultValues: {
@@ -89,7 +90,9 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit }: PurchaseFormPr
     formData.append('invoiceNumber', data.invoiceNumber);
     formData.append('total', data.total.toString());
     formData.append('items', JSON.stringify(data.items));
-    formAction(formData);
+    startTransition(() => {
+      formAction(formData);
+    });
   };
   
   return (
@@ -163,7 +166,7 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit }: PurchaseFormPr
       </div>
       
       <div className="flex justify-end gap-2">
-        <SubmitButton pending={isSubmitting} pendingText="Menyimpan...">Simpan & Masuk Warehouse</SubmitButton>
+        <SubmitButton pending={isPending} pendingText="Menyimpan...">Simpan & Masuk Warehouse</SubmitButton>
       </div>
     </form>
   );

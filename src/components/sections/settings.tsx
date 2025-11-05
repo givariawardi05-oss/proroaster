@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect } from 'react';
+import React, { useEffect, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -26,11 +26,12 @@ type SettingsFormValues = z.infer<typeof settingsSchema>;
 
 export function Settings({ data }: SettingsProps) {
   const [state, formAction] = useActionState(saveSettings, null);
+  const [isPending, startTransition] = useTransition();
 
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
     defaultValues: {
@@ -57,7 +58,9 @@ export function Settings({ data }: SettingsProps) {
     Object.keys(data).forEach(key => {
         formData.append(key, (data as any)[key]);
     });
-    formAction(formData);
+    startTransition(() => {
+      formAction(formData);
+    });
   };
 
   return (
@@ -96,7 +99,7 @@ export function Settings({ data }: SettingsProps) {
             </div>
 
             <div className="pt-4">
-              <SubmitButton pending={isSubmitting} pendingText="Menyimpan...">Simpan Pengaturan</SubmitButton>
+              <SubmitButton pending={isPending} pendingText="Menyimpan...">Simpan Pengaturan</SubmitButton>
             </div>
           </form>
         </CardContent>

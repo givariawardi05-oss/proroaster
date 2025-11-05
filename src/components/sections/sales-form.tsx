@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useTransition } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -47,6 +47,7 @@ interface SalesFormProps {
 
 export function SalesForm({ nextInvoiceNumber, availableProducts, onFormSubmit }: SalesFormProps) {
   const [state, formAction] = useActionState(createSale, null);
+  const [isPending, startTransition] = useTransition();
 
   const {
     register,
@@ -55,7 +56,7 @@ export function SalesForm({ nextInvoiceNumber, availableProducts, onFormSubmit }
     watch,
     setValue,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<SalesFormValues>({
     resolver: zodResolver(salesSchema),
     defaultValues: {
@@ -122,7 +123,9 @@ export function SalesForm({ nextInvoiceNumber, availableProducts, onFormSubmit }
             formData.append(key, (data as any)[key]);
         }
     });
-    formAction(formData);
+    startTransition(() => {
+      formAction(formData);
+    });
   };
   
   return (
@@ -197,7 +200,7 @@ export function SalesForm({ nextInvoiceNumber, availableProducts, onFormSubmit }
         </div>
       </div>
       <div className="flex justify-end pt-4">
-        <SubmitButton pending={isSubmitting} pendingText="Menyimpan...">Simpan Invoice</SubmitButton>
+        <SubmitButton pending={isPending} pendingText="Menyimpan...">Simpan Invoice</SubmitButton>
       </div>
     </form>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useTransition } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -40,6 +40,7 @@ interface RoastingFormProps {
 
 export function RoastingForm({ nextBatchId, availableBeans, onFormSubmit }: RoastingFormProps) {
   const [state, formAction] = useActionState(createRoastingBatch, null);
+  const [isPending, startTransition] = useTransition();
 
   const {
     register,
@@ -48,7 +49,7 @@ export function RoastingForm({ nextBatchId, availableBeans, onFormSubmit }: Roas
     control,
     setValue,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<RoastingFormValues>({
     resolver: zodResolver(roastingSchema),
     defaultValues: {
@@ -105,7 +106,9 @@ export function RoastingForm({ nextBatchId, availableBeans, onFormSubmit }: Roas
     Object.keys(data).forEach(key => {
         formData.append(key, (data as any)[key]);
     });
-    formAction(formData);
+    startTransition(() => {
+      formAction(formData);
+    });
   };
 
   return (
@@ -190,7 +193,7 @@ export function RoastingForm({ nextBatchId, availableBeans, onFormSubmit }: Roas
       </div>
       
       <div className="flex justify-end gap-2 pt-4">
-        <SubmitButton pending={isSubmitting} pendingText="Memproses...">Proses Roasting</SubmitButton>
+        <SubmitButton pending={isPending} pendingText="Memproses...">Proses Roasting</SubmitButton>
       </div>
     </form>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -29,13 +29,14 @@ interface ManualStockFormProps {
 
 export function ManualStockForm({ onFormSubmit }: ManualStockFormProps) {
   const [state, formAction] = useActionState(addManualStock, null);
+  const [isPending, startTransition] = useTransition();
 
   const {
     register,
     handleSubmit,
     setValue,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<ManualStockFormValues>({
     resolver: zodResolver(manualStockSchema),
     defaultValues: {
@@ -65,7 +66,9 @@ export function ManualStockForm({ onFormSubmit }: ManualStockFormProps) {
     Object.keys(data).forEach(key => {
         formData.append(key, (data as any)[key]);
     });
-    formAction(formData);
+    startTransition(() => {
+      formAction(formData);
+    });
   };
 
   return (
@@ -105,7 +108,7 @@ export function ManualStockForm({ onFormSubmit }: ManualStockFormProps) {
         </div>
       </div>
       <div className="flex justify-end pt-4">
-        <SubmitButton pending={isSubmitting} pendingText="Menyimpan...">Simpan Produk</SubmitButton>
+        <SubmitButton pending={isPending} pendingText="Menyimpan...">Simpan Produk</SubmitButton>
       </div>
     </form>
   );

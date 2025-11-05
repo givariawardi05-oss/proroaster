@@ -21,8 +21,8 @@ import {
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
-const SIDEBAR_WIDTH = "16rem"
-const SIDEBAR_WIDTH_MOBILE = "16rem"
+const SIDEBAR_WIDTH = "15rem"
+const SIDEBAR_WIDTH_MOBILE = "15rem"
 const SIDEBAR_WIDTH_ICON = "3.5rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 
@@ -322,10 +322,10 @@ const SidebarInset = React.forwardRef<
     <main
       ref={ref}
       className={cn(
-        "relative flex min-h-svh flex-1 flex-col transition-[margin-left] duration-200 ease-linear",
-        "peer-data-[state=expanded]:md:ml-[var(--sidebar-width)]",
-        "peer-data-[state=collapsed]:md:ml-[var(--sidebar-width-icon)]",
+        "relative flex min-h-svh flex-1 flex-col transition-all duration-200 ease-linear",
+        "md:peer-data-[state=expanded]:ml-[var(--sidebar-width)]",
         "peer-data-[variant=inset]:min-h-[calc(100svh-theme(spacing.4))] md:peer-data-[variant=inset]:m-2 md:peer-data-[state=collapsed]:peer-data-[variant=inset]:ml-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))] md:peer-data-[variant=inset]:ml-[var(--sidebar-width)] md:peer-data-[variant=inset]:rounded-lg md:peer-data-[variant=inset]:shadow",
+        "md:peer-data-[state=collapsed]:ml-[var(--sidebar-width-icon)]",
         className
       )}
       {...props}

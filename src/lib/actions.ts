@@ -117,7 +117,7 @@ export async function createRoastingBatch(prevState: ActionState, formData: Form
             Yield_Persen: `${yieldPercent}%`,
             Profile: formData.get('profile') as string,
             HPP_Per_Kg: safeParseFloat(formData.get('hppPerKg')),
-            Harga_Jual_Kg: safeParseFloat(formData.get('sellPrice')),
+            Harga_Jual_Kg: 0, // Removed from form
             Status: 'Completed',
         };
 
@@ -171,29 +171,14 @@ export async function createRoastingBatch(prevState: ActionState, formData: Form
             roastedInvItem.Stock_Kg = newRoastedStock;
             roastedInvItem.Total_Value = newRoastedValue;
             roastedInvItem.HPP_Per_Kg = newRoastedAvgHPP;
-            roastedInvItem.Harga_Jual_Kg = batchData.Harga_Jual_Kg;
         } else {
             updatedDb.roastedInventory.push({
                 id: roastedProductName.replace(/\s+/g, '-').toLowerCase(),
                 Produk_Roasting: roastedProductName,
                 Stock_Kg: batchData.Output_Kg,
                 HPP_Per_Kg: batchData.HPP_Per_Kg,
-                Harga_Jual_Kg: batchData.Harga_Jual_Kg,
+                Harga_Jual_Kg: 0, // Default sell price to 0
                 Total_Value: batchData.HPP_Per_Kg * batchData.Output_Kg,
-            });
-        }
-
-        // 5. Add operational costs to transactions
-        const totalOpCost = safeParseFloat(formData.get('gasCost')) + safeParseFloat(formData.get('laborCost')) + safeParseFloat(formData.get('otherCost'));
-        if (totalOpCost > 0) {
-            updatedDb.transactions.push({
-                id: `trx-${Date.now()}-op`,
-                Tanggal: batchData.Tanggal,
-                Deskripsi: `Biaya operasional untuk batch ${batchData.Batch_ID}`,
-                Referensi: batchData.Batch_ID,
-                Kategori: 'Biaya Operasional',
-                Debit: 0,
-                Kredit: totalOpCost,
             });
         }
         
@@ -255,7 +240,8 @@ export async function transferToStore(prevState: ActionState, formData: FormData
                 storeInvItem.Stock_Kg = newStoreStock;
                 storeInvItem.Total_Value = newStoreValue;
                 storeInvItem.HPP_Per_Kg = newAvgHPP;
-                storeInvItem.Harga_Jual_Kg = roastedDoc.Harga_Jual_Kg;
+                // Keep existing sell price in store or set a default
+                storeInvItem.Harga_Jual_Kg = storeInvItem.Harga_Jual_Kg > 0 ? storeInvItem.Harga_Jual_Kg : hpp * 1.5;
             } else {
                 updatedDb.storeInventory.push({
                     id: roastedDoc.Produk_Roasting.replace(/\s+/g, '-').toLowerCase(),
@@ -263,7 +249,8 @@ export async function transferToStore(prevState: ActionState, formData: FormData
                     Kategori: 'Roasted Beans',
                     Stock_Kg: stockToTransfer,
                     HPP_Per_Kg: hpp,
-                    Harga_Jual_Kg: roastedDoc.Harga_Jual_Kg,
+                    // Set a default sell price, can be updated manually later
+                    Harga_Jual_Kg: hpp * 1.5,
                     Total_Value: valueToTransfer,
                 });
             }
@@ -653,5 +640,117 @@ export async function deletePurchase(prevState: ActionState, formData: FormData)
     } catch (e: any) {
         console.error("Error deleting purchase:", e);
         return { message: `Gagal menghapus faktur: ${e.message}`, status: 'error' };
+    }
+}
+
+// --- Update Purchase Invoice Action ---
+export async function updatePurchase(prevState: ActionState, formData: FormData): Promise<ActionState> {
+     try {
+        const db: GlobalData = JSON.parse(formData.get('currentData') as string);
+        const invoiceId = formData.get('invoiceId') as string;
+        
+        const oldInvoice = db.purchaseInvoices.find(inv => inv.id === invoiceId);
+        if (!oldInvoice) {
+            throw new Error("Faktur lama tidak ditemukan untuk diperbarui.");
+        }
+
+        // --- First, revert the old state ---
+        
+        // 1. Revert transaction
+        let updatedTransactions = db.transactions.filter(t => t.Referensi !== oldInvoice.No_Faktur);
+
+        // 2. Revert warehouse stock
+        let updatedWarehouseData = [...db.warehouseData];
+        for (const item of oldInvoice.items) {
+            const warehouseItemIndex = updatedWarehouseData.findIndex(wh => wh.Nama_Green_Beans === item.name);
+            if (warehouseItemIndex > -1) {
+                const whItem = updatedWarehouseData[warehouseItemIndex];
+                const itemQty = safeParseFloat(item.qty);
+                const itemValue = itemQty * safeParseFloat(item.price);
+
+                const newStock = whItem.Stock_Kg - itemQty;
+                const newTotalValue = whItem.Total_Value - itemValue;
+                
+                whItem.Stock_Kg = newStock < 0 ? 0 : newStock;
+                whItem.Total_Value = newTotalValue < 0 ? 0 : newTotalValue;
+                whItem.Avg_HPP = whItem.Stock_Kg > 0 ? whItem.Total_Value / whItem.Stock_Kg : 0;
+            }
+        }
+
+        // --- Second, apply the new state ---
+        
+        const newItems = JSON.parse(formData.get('items') as string) as PurchaseItem[];
+        const newTotalFaktur = safeParseFloat(formData.get('total'));
+        
+        const updatedInvoiceData: PurchaseInvoice = {
+            ...oldInvoice,
+            Supplier: formData.get('supplier') as string,
+            Tanggal: formData.get('date') as string,
+            Total_Faktur: newTotalFaktur,
+            items: newItems,
+        };
+
+        // 1. Add new transaction record
+        updatedTransactions.push({
+            id: `trx-${Date.now()}`,
+            Tanggal: updatedInvoiceData.Tanggal,
+            Deskripsi: `Pembelian dari ${updatedInvoiceData.Supplier}`,
+            Referensi: updatedInvoiceData.No_Faktur,
+            Kategori: 'Pembelian/Kredit',
+            Debit: 0,
+            Kredit: updatedInvoiceData.Total_Faktur,
+        });
+
+        // 2. Update warehouse stock with new data
+        for (const item of newItems) {
+            const warehouseItemIndex = updatedWarehouseData.findIndex(wh => wh.Nama_Green_Beans === item.name);
+            
+            const qty = safeParseFloat(item.qty);
+            const price = safeParseFloat(item.price);
+            const totalValueItem = qty * price;
+
+            if (warehouseItemIndex > -1) {
+                const warehouseItem = updatedWarehouseData[warehouseItemIndex];
+                const oldStock = safeParseFloat(warehouseItem.Stock_Kg);
+                const oldTotalValue = safeParseFloat(warehouseItem.Total_Value);
+                
+                const newStock = oldStock + qty;
+                const newTotalValue = oldTotalValue + totalValueItem;
+                const newAvgHPP = newStock > 0 ? newTotalValue / newStock : 0;
+                
+                warehouseItem.Stock_Kg = newStock;
+                warehouseItem.Total_Value = newTotalValue;
+                warehouseItem.Avg_HPP = newAvgHPP;
+                warehouseItem.Last_Update = updatedInvoiceData.Tanggal;
+            } else {
+                updatedWarehouseData.push({
+                    id: item.name.replace(/\s+/g, '-').toLowerCase(),
+                    Nama_Green_Beans: item.name,
+                    Stock_Kg: qty,
+                    Avg_HPP: price,
+                    Total_Value: totalValueItem,
+                    Last_Update: updatedInvoiceData.Tanggal,
+                });
+            }
+        }
+
+        // 3. Update the invoice in the main array
+        const updatedPurchaseInvoices = db.purchaseInvoices.map(inv => 
+            inv.id === invoiceId ? updatedInvoiceData : inv
+        );
+
+        const updatedDb: StorableGlobalData = {
+            ...db,
+            purchaseInvoices: updatedPurchaseInvoices,
+            transactions: updatedTransactions,
+            warehouseData: updatedWarehouseData,
+        };
+
+        revalidatePath('/');
+        return { message: 'Faktur pembelian berhasil diperbarui!', status: 'success', data: updatedDb };
+
+    } catch (e: any) {
+        console.error("Error updating purchase:", e);
+        return { message: `Gagal memperbarui faktur: ${e.message}`, status: 'error' };
     }
 }

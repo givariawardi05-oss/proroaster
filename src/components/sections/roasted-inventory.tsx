@@ -15,7 +15,6 @@ import { StatCard } from '@/components/stat-card';
 import { formatRupiah } from '@/lib/utils';
 import type { GlobalData, RoastedInventoryItem } from '@/lib/definitions';
 import { Package, DollarSign, Scale, ArrowRight } from 'lucide-react';
-import { transferToStore } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { SubmitButton } from '../submit-button';
 
@@ -58,13 +57,68 @@ export function RoastedInventory({ data, onDataChange }: RoastedInventoryProps) 
   const handleTransfer = () => {
     startTransition(async () => {
         const itemsToTransfer = Array.from(selectedItems).map(id => ({ id }));
-        const result = await transferToStore(data, itemsToTransfer);
-        if (result.status === 'success' && result.data) {
-            toast({ title: 'Sukses', description: result.message });
-            onDataChange(result.data);
-            setSelectedItems(new Set());
-        } else {
-            toast({ title: 'Error', description: result.message, variant: 'destructive' });
+        const formData = new FormData();
+        formData.append('currentData', JSON.stringify(data));
+        formData.append('itemsToTransfer', JSON.stringify(itemsToTransfer));
+        
+        // This is a placeholder for a server action that doesn't exist yet.
+        // To make this functional, you would replace this with:
+        // const result = await transferToStoreAction(null, formData);
+        // For now, we simulate the logic client-side to demonstrate UI changes.
+        
+        try {
+            const db: GlobalData = JSON.parse(formData.get('currentData') as string);
+            const itemsToTransfer: { id: string }[] = JSON.parse(formData.get('itemsToTransfer') as string);
+
+            if (!itemsToTransfer || itemsToTransfer.length === 0) {
+                 toast({ title: 'Error', description: 'Tidak ada item yang dipilih untuk ditransfer.', variant: 'destructive' });
+                 return;
+            }
+
+            let updatedDb = { ...db, roastedInventory: [...db.roastedInventory], storeInventory: [...db.storeInventory] };
+
+            for (const item of itemsToTransfer) {
+                const roastedIndex = updatedDb.roastedInventory.findIndex(i => i.id === item.id);
+                if (roastedIndex === -1) continue;
+                
+                const roastedDoc = updatedDb.roastedInventory[roastedIndex];
+                const stockToTransfer = roastedDoc.Stock_Kg;
+
+                if (stockToTransfer <= 0) continue;
+
+                const storeInvIndex = updatedDb.storeInventory.findIndex(si => si.Nama_Produk === roastedDoc.Produk_Roasting);
+                const hpp = roastedDoc.HPP_Per_Kg;
+                const valueToTransfer = stockToTransfer * hpp;
+                const sellPrice = roastedDoc.Harga_Jual_Kg > 0 ? roastedDoc.Harga_Jual_Kg : hpp * 1.5; // Use existing or default
+
+                if (storeInvIndex > -1) {
+                    const storeInvItem = updatedDb.storeInventory[storeInvIndex];
+                    const newStoreStock = storeInvItem.Stock_Kg + stockToTransfer;
+                    const newStoreValue = storeInvItem.Total_Value + valueToTransfer;
+                    storeInvItem.Stock_Kg = newStoreStock;
+                    storeInvItem.Total_Value = newStoreValue;
+                    storeInvItem.HPP_Per_Kg = newStoreStock > 0 ? newStoreValue / newStoreStock : 0;
+                    storeInvItem.Harga_Jual_Kg = storeInvItem.Harga_Jual_Kg > 0 ? storeInvItem.Harga_Jual_Kg : sellPrice;
+                } else {
+                    updatedDb.storeInventory.push({
+                        id: roastedDoc.Produk_Roasting.replace(/\s+/g, '-').toLowerCase(),
+                        Nama_Produk: roastedDoc.Produk_Roasting,
+                        Kategori: 'Roasted Beans',
+                        Stock_Kg: stockToTransfer,
+                        HPP_Per_Kg: hpp,
+                        Harga_Jual_Kg: sellPrice,
+                        Total_Value: valueToTransfer,
+                    });
+                }
+                
+                roastedDoc.Stock_Kg = 0;
+                roastedDoc.Total_Value = 0;
+            }
+             toast({ title: 'Sukses', description: `${itemsToTransfer.length} item berhasil ditransfer ke toko.` });
+             onDataChange(updatedDb);
+             setSelectedItems(new Set());
+        } catch (e: any) {
+            toast({ title: 'Error', description: e.message, variant: 'destructive' });
         }
     });
   }
@@ -79,7 +133,7 @@ export function RoastedInventory({ data, onDataChange }: RoastedInventoryProps) 
           <h2 className="text-3xl font-bold tracking-tight">Inventory Hasil Roasting</h2>
           <p className="text-muted-foreground">Stok hasil roasting yang siap dipindah ke toko.</p>
         </div>
-        <SubmitButton onClick={handleTransfer} disabled={selectedItems.size === 0} pending={isPending} pendingText="Mentransfer...">
+        <SubmitButton onClick={handleTransfer} disabled={selectedItems.size === 0 || isPending} pending={isPending} pendingText="Mentransfer...">
           {`Transfer ${selectedItems.size} Item`}
           <ArrowRight className="ml-2 h-4 w-4" />
         </SubmitButton>
@@ -109,7 +163,6 @@ export function RoastedInventory({ data, onDataChange }: RoastedInventoryProps) 
                 <TableHead>Produk</TableHead>
                 <TableHead>Stok (kg)</TableHead>
                 <TableHead>HPP/kg</TableHead>
-                <TableHead>Harga Jual/kg</TableHead>
                 <TableHead>Total Value</TableHead>
               </TableRow>
             </TableHeader>
@@ -127,13 +180,12 @@ export function RoastedInventory({ data, onDataChange }: RoastedInventoryProps) 
                     <TableCell className="font-medium">{item.Produk_Roasting}</TableCell>
                     <TableCell>{item.Stock_Kg.toFixed(2)}</TableCell>
                     <TableCell>{formatRupiah(item.HPP_Per_Kg)}</TableCell>
-                    <TableCell>{formatRupiah(item.Harga_Jual_Kg)}</TableCell>
                     <TableCell>{formatRupiah(item.Total_Value)}</TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center h-24">
+                  <TableCell colSpan={5} className="text-center h-24">
                     Tidak ada stok hasil roasting yang tersedia.
                   </TableCell>
                 </TableRow>

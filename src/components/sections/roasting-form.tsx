@@ -21,10 +21,6 @@ const roastingSchema = z.object({
   inputQty: z.coerce.number().min(0.1, "Qty harus lebih dari 0"),
   profile: z.string().min(1, "Profil roasting wajib dipilih"),
   yieldPercent: z.coerce.number().min(1).max(100),
-  sellPrice: z.coerce.number().min(1, "Harga jual wajib diisi"),
-  gasCost: z.coerce.number().min(0),
-  laborCost: z.coerce.number().min(0),
-  otherCost: z.coerce.number().min(0),
   hppPerKg: z.coerce.number(),
 });
 
@@ -56,9 +52,6 @@ export function RoastingForm({ nextBatchId, availableBeans, onFormSubmit, curren
       batchId: nextBatchId,
       date: getTodayDateString(),
       yieldPercent: 85,
-      gasCost: 50000,
-      laborCost: 100000,
-      otherCost: 25000,
       hppPerKg: 0,
     },
   });
@@ -67,21 +60,17 @@ export function RoastingForm({ nextBatchId, availableBeans, onFormSubmit, curren
 
   const calculations = useMemo(() => {
     const selectedBean = availableBeans.find(b => b.Nama_Green_Beans === watchedValues.greenBeans);
-    if (!selectedBean) return { gbHpp: 0, output: 0, totalCost: 0, hppPerKg: 0, margin: 0 };
+    if (!selectedBean) return { gbHpp: 0, output: 0, totalCost: 0, hppPerKg: 0 };
     
     const inputQty = watchedValues.inputQty || 0;
     const yieldPercent = watchedValues.yieldPercent || 0;
     
     const gbHpp = (selectedBean.Avg_HPP || 0) * inputQty;
     const output = inputQty * (yieldPercent / 100);
-    const opCosts = (watchedValues.gasCost || 0) + (watchedValues.laborCost || 0) + (watchedValues.otherCost || 0);
-    const totalCost = gbHpp + opCosts;
+    const totalCost = gbHpp; // Total cost is now just the green bean HPP
     const hppPerKg = output > 0 ? totalCost / output : 0;
     
-    const sellPrice = watchedValues.sellPrice || 0;
-    const margin = sellPrice > 0 && hppPerKg > 0 ? ((sellPrice - hppPerKg) / sellPrice) * 100 : 0;
-    
-    return { gbHpp, output, totalCost, hppPerKg, margin };
+    return { gbHpp, output, totalCost, hppPerKg };
   }, [watchedValues, availableBeans]);
 
   useEffect(() => {
@@ -96,9 +85,6 @@ export function RoastingForm({ nextBatchId, availableBeans, onFormSubmit, curren
         batchId: `RB-${Date.now()}`,
         date: getTodayDateString(),
         yieldPercent: 85,
-        gasCost: 50000,
-        laborCost: 100000,
-        otherCost: 25000,
         hppPerKg: 0,
       });
       onFormSubmit(state.data);
@@ -155,7 +141,7 @@ export function RoastingForm({ nextBatchId, availableBeans, onFormSubmit, curren
             {errors.inputQty && <p className="text-destructive text-sm mt-1">{errors.inputQty.message}</p>}
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <Label>Roasting Profile</Label>
           <Controller
@@ -179,27 +165,16 @@ export function RoastingForm({ nextBatchId, availableBeans, onFormSubmit, curren
           <Label>Expected Yield (%)</Label>
           <Input type="number" {...register("yieldPercent")} />
         </div>
-        <div>
-          <Label>Harga Jual/kg</Label>
-          <Input type="number" {...register("sellPrice")} />
-          {errors.sellPrice && <p className="text-destructive text-sm mt-1">{errors.sellPrice.message}</p>}
-        </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t pt-4">
-        <div><Label>Biaya Gas (Rp)</Label><Input type="number" {...register("gasCost")} /></div>
-        <div><Label>Biaya Tenaga Kerja (Rp)</Label><Input type="number" {...register("laborCost")} /></div>
-        <div><Label>Biaya Lainnya (Rp)</Label><Input type="number" {...register("otherCost")} /></div>
       </div>
       
       {/* Calculations Display */}
       <div className="bg-secondary p-4 rounded-lg">
         <h4 className="font-semibold mb-2">Kalkulasi Otomatis</h4>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div><span className="text-muted-foreground">Green Beans HPP:</span><p className="font-semibold">{formatRupiah(calculations.gbHpp)}</p></div>
           <div><span className="text-muted-foreground">Expected Output:</span><p className="font-semibold">{calculations.output.toFixed(2)} kg</p></div>
           <div><span className="text-muted-foreground">Total Cost Batch:</span><p className="font-semibold">{formatRupiah(calculations.totalCost)}</p></div>
           <div><span className="text-muted-foreground">HPP/kg Hasil:</span><p className="font-semibold">{formatRupiah(calculations.hppPerKg)}</p></div>
-          <div><span className="text-muted-foreground">Profit Margin:</span><p className="font-semibold">{calculations.margin.toFixed(1)}%</p></div>
         </div>
       </div>
       

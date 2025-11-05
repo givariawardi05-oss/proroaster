@@ -84,7 +84,6 @@ export function Roasting({ data, onDataChange }: RoastingProps) {
               <TableHead className="text-right">Output</TableHead>
               <TableHead>Profil</TableHead>
               <TableHead className="text-right">HPP/kg</TableHead>
-              <TableHead className="text-right">Jual/kg</TableHead>
               <TableHead className="text-center">Status</TableHead>
             </TableRow>
           </TableHeader>
@@ -99,7 +98,6 @@ export function Roasting({ data, onDataChange }: RoastingProps) {
                   <TableCell className="text-right">{batch.Output_Kg.toFixed(2)} kg</TableCell>
                   <TableCell>{batch.Profile} ({batch.Yield_Persen})</TableCell>
                   <TableCell className="text-right">{formatRupiah(batch.HPP_Per_Kg)}</TableCell>
-                  <TableCell className="text-right">{formatRupiah(batch.Harga_Jual_Kg)}</TableCell>
                   <TableCell className="text-center">
                     <Badge variant="outline" className="border-green-500 bg-green-50 text-green-700">
                       {batch.Status}
@@ -109,7 +107,7 @@ export function Roasting({ data, onDataChange }: RoastingProps) {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={9} className="text-center h-24">
+                <TableCell colSpan={8} className="text-center h-24">
                   Belum ada batch roasting.
                 </TableCell>
               </TableRow>

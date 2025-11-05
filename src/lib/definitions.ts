@@ -65,6 +65,7 @@ export type SalesInvoice = {
     Jatuh_Tempo: string;
     Total_Invoice: number;
     Status_Bayar: 'Draft' | 'Sent' | 'Paid' | 'Lunas' | 'Overdue';
+    Metode_Pembayaran: string;
     items: SalesItem[];
 };
 
@@ -95,7 +96,6 @@ export type Asset = {
     Tgl_Perolehan: string;
     Nilai_Perolehan: number;
     Penyusutan_Tahun: number;
-    Nilai_Buku: number;
 };
 
 export type Settings = {

@@ -8,19 +8,11 @@ import { PanelLeft, X } from "lucide-react"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import { Sheet, SheetContent, SheetOverlay, SheetTrigger, SheetClose } from "@/components/ui/sheet"
-import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
+import { Sheet, SheetContent } from "@/components/ui/sheet"
+import { TooltipProvider } from "@/components/ui/tooltip"
 
-const SIDEBAR_WIDTH = "16rem"
-const SIDEBAR_WIDTH_MOBILE = "16rem"
+const SIDEBAR_WIDTH = "18rem"; // Adjusted width
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 
 type SidebarContext = {
@@ -53,7 +45,16 @@ const SidebarProvider = React.forwardRef<
     },
     ref
   ) => {
+    const isMobile = useIsMobile()
     const [open, setOpen] = React.useState(false)
+
+    React.useEffect(() => {
+        if (!isMobile) {
+            setOpen(true);
+        } else {
+            setOpen(false);
+        }
+    }, [isMobile]);
 
     const toggleSidebar = React.useCallback(() => {
       setOpen((open) => !open)
@@ -90,7 +91,6 @@ const SidebarProvider = React.forwardRef<
             style={
               {
                 "--sidebar-width": SIDEBAR_WIDTH,
-                "--sidebar-width-mobile": SIDEBAR_WIDTH_MOBILE,
                 ...style,
               } as React.CSSProperties
             }
@@ -125,21 +125,36 @@ const Sidebar = React.forwardRef<
   ) => {
     const { open, setOpen } = useSidebar()
     const isMobile = useIsMobile()
-    const sidebarWidth = isMobile ? "var(--sidebar-width-mobile)" : "var(--sidebar-width)"
+
+    if (isMobile) {
+        return (
+            <Sheet open={open} onOpenChange={setOpen}>
+                <SheetContent
+                    ref={ref}
+                    side={side}
+                    className={cn("w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground flex flex-col", className)}
+                    {...props}
+                >
+                    {children}
+                </SheetContent>
+            </Sheet>
+        )
+    }
 
     return (
-        <Sheet open={open} onOpenChange={setOpen}>
-            <SheetContent
-                ref={ref}
-                side={side}
-                className={cn("w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground flex flex-col", className)}
-                style={{'--sidebar-width': sidebarWidth} as React.CSSProperties}
-                {...props}
-            >
-                {children}
-            </SheetContent>
-        </Sheet>
-    )
+        <div
+            ref={ref}
+            data-state={open ? 'open' : 'closed'}
+            className={cn("flex-col bg-sidebar text-sidebar-foreground transition-all duration-300 ease-in-out lg:flex",
+                open ? 'w-[var(--sidebar-width)]' : 'w-0',
+                className)}
+            {...props}
+        >
+            <div className="flex-1 overflow-hidden">
+             {children}
+            </div>
+        </div>
+    );
   }
 )
 Sidebar.displayName = "Sidebar"
@@ -150,6 +165,9 @@ const SidebarTrigger = React.forwardRef<
   React.ComponentProps<typeof Button>
 >(({ className, onClick, ...props }, ref) => {
   const { toggleSidebar } = useSidebar()
+  const isMobile = useIsMobile()
+
+  if (!isMobile) return null;
 
   return (
     <Button

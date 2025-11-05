@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from 'react';
-import { SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import React, { useState, useEffect } from 'react';
+import { SidebarProvider, SidebarInset, SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import type { GlobalData, SectionName } from '@/lib/definitions';
 import { Dashboard } from './sections/dashboard';
@@ -19,7 +19,8 @@ import { Settings } from './sections/settings';
 import { Sync } from './sections/sync';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
-import { Bell, Search } from 'lucide-react';
+import { Bell, Search, Menu } from 'lucide-react';
+import { fetchAllData } from '@/lib/data';
 
 interface MainLayoutProps {
   initialData: GlobalData;
@@ -27,6 +28,19 @@ interface MainLayoutProps {
 
 export default function MainLayout({ initialData }: MainLayoutProps) {
   const [activeSection, setActiveSection] = useState<SectionName>('dashboard');
+  const [data, setData] = useState<GlobalData>(initialData);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const { setOpen } = useSidebar();
+
+  useEffect(() => {
+    const loadData = async () => {
+      const localData = await fetchAllData();
+      setData(localData);
+      setIsDataLoaded(true);
+    };
+    loadData();
+  }, [activeSection]); // Re-fetch data when section changes to reflect updates
+
   
   const sectionTitles: Record<SectionName, string> = {
     dashboard: 'Dashboard',
@@ -45,47 +59,53 @@ export default function MainLayout({ initialData }: MainLayoutProps) {
   };
 
   const renderSection = () => {
+    if (!isDataLoaded) {
+        return <div className="flex justify-center items-center h-full">Loading data...</div>;
+    }
     switch (activeSection) {
       case 'dashboard':
-        return <Dashboard data={initialData} />;
+        return <Dashboard data={data} />;
       case 'purchases':
-        return <Purchases data={initialData} />;
+        return <Purchases data={data} />;
       case 'warehouse':
-        return <Warehouse data={initialData} />;
+        return <Warehouse data={data} />;
       case 'roasting':
-        return <Roasting data={initialData} />;
+        return <Roasting data={data} />;
       case 'roasted-inventory':
-        return <RoastedInventory data={initialData} />;
+        return <RoastedInventory data={data} />;
       case 'store-inventory':
-        return <StoreInventory data={initialData} />;
+        return <StoreInventory data={data} />;
       case 'sales':
-        return <Sales data={initialData} />;
+        return <Sales data={data} />;
       case 'transactions':
-        return <Transactions data={initialData} />;
+        return <Transactions data={data} />;
       case 'reports':
         return <Reports />;
       case 'assets':
-        return <Assets data={initialData} />;
+        return <Assets data={data} />;
       case 'balance-sheet':
-        return <BalanceSheet data={initialData} />;
+        return <BalanceSheet data={data} />;
       case 'settings':
-        return <Settings data={initialData} />;
+        return <Settings data={data} />;
       case 'sync':
         return <Sync />;
       default:
-        return <Dashboard data={initialData} />;
+        return <Dashboard data={data} />;
     }
   };
 
   return (
     <>
       <AppSidebar activeSection={activeSection} setActiveSection={setActiveSection} />
-      <SidebarInset>
-        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
-          <SidebarTrigger />
-          <div className="flex-1">
-            <h1 className="text-xl font-semibold">{sectionTitles[activeSection]}</h1>
-          </div>
+      <div className='flex-1 flex flex-col'>
+         <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
+            <Button variant="ghost" size="icon" onClick={() => setOpen(true)} className='lg:hidden'>
+                <Menu className='h-6 w-6' />
+                <span className='sr-only'>Open Sidebar</span>
+            </Button>
+            <div className="flex-1">
+                <h1 className="text-xl font-semibold">{sectionTitles[activeSection]}</h1>
+            </div>
             <div className='relative w-full max-w-xs'>
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input placeholder="Cari..." className="pl-9 bg-input" />
@@ -99,7 +119,7 @@ export default function MainLayout({ initialData }: MainLayoutProps) {
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
             {renderSection()}
         </main>
-      </SidebarInset>
+      </div>
     </>
   );
 }

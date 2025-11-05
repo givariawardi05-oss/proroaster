@@ -1,10 +1,9 @@
 import { SidebarProvider } from '@/components/ui/sidebar';
 import MainLayout from '@/components/main-layout';
-import { fetchAllData } from '@/lib/data';
 import type { GlobalData } from '@/lib/definitions';
 
-// Dummy data for when fetch fails or in dev environment without DB
-const getDummyData = (): GlobalData => ({
+// Dummy data is now the initial state before client-side localStorage hydration
+const getInitialData = (): GlobalData => ({
   warehouseData: [],
   roastingBatches: [],
   roastedInventory: [],
@@ -27,15 +26,8 @@ const getDummyData = (): GlobalData => ({
 });
 
 
-export default async function Home() {
-  let data: GlobalData;
-  try {
-    data = await fetchAllData();
-  } catch (error) {
-    console.error("Failed to fetch initial data:", error);
-    // Fallback to dummy data if Firestore fetch fails
-    data = getDummyData();
-  }
+export default function Home() {
+  const data = getInitialData();
 
   return (
     <SidebarProvider>

@@ -19,14 +19,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { formatRupiah } from '@/lib/utils';
+import { formatRupiah, cn } from '@/lib/utils';
 import type { GlobalData, SalesInvoice, StoreInventoryItem } from '@/lib/definitions';
 import { PlusCircle } from 'lucide-react';
 import { SalesForm } from './sales-form';
-import { cn } from '@/lib/utils';
 
 interface SalesProps {
   data: GlobalData;
+  onDataChange: (data: GlobalData) => void;
 }
 
 const statusVariant: { [key: string]: 'destructive' | 'secondary' | 'outline' } = {
@@ -46,9 +46,14 @@ const statusColor: { [key: string]: string } = {
 }
 
 
-export function Sales({ data }: SalesProps) {
+export function Sales({ data, onDataChange }: SalesProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const availableProducts: StoreInventoryItem[] = data.storeInventory.filter(item => item.Stock_Kg > 0);
+  
+  const handleFormSubmit = (newData: GlobalData) => {
+    onDataChange(newData);
+    setIsDialogOpen(false);
+  }
 
   return (
     <div className="space-y-6">
@@ -74,7 +79,8 @@ export function Sales({ data }: SalesProps) {
             <SalesForm
               nextInvoiceNumber={data.nextIds.salesInvoice}
               availableProducts={availableProducts}
-              onFormSubmit={() => setIsDialogOpen(false)}
+              onFormSubmit={handleFormSubmit}
+              currentData={data}
             />
           </DialogContent>
         </Dialog>
@@ -130,3 +136,5 @@ export function Sales({ data }: SalesProps) {
     </div>
   );
 }
+
+    

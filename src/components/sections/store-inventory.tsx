@@ -27,11 +27,12 @@ import { ManualStockForm } from './manual-stock-form';
 
 interface StoreInventoryProps {
   data: GlobalData;
+  onDataChange: (data: GlobalData) => void;
 }
 
 type FilterType = 'all' | 'low' | 'available';
 
-export function StoreInventory({ data }: StoreInventoryProps) {
+export function StoreInventory({ data, onDataChange }: StoreInventoryProps) {
   const [filter, setFilter] = useState<FilterType>('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const lowStockLimit = data.settings.stock_low_limit || 10;
@@ -58,6 +59,11 @@ export function StoreInventory({ data }: StoreInventoryProps) {
     if (stock < lowStockLimit) return { text: 'Stok Rendah', variant: 'destructive', className: 'border-red-500 bg-red-50 text-red-700' };
     return { text: 'Tersedia', variant: 'outline', className: 'border-green-500 bg-green-50 text-green-700' };
   };
+  
+  const handleFormSubmit = (newData: GlobalData) => {
+    onDataChange(newData);
+    setIsDialogOpen(false);
+  }
 
   return (
     <div className="space-y-6">
@@ -80,7 +86,7 @@ export function StoreInventory({ data }: StoreInventoryProps) {
                 Gunakan ini untuk menambahkan item non-roasting seperti merchandise atau untuk menyesuaikan stok.
               </DialogDescription>
             </DialogHeader>
-            <ManualStockForm onFormSubmit={() => setIsDialogOpen(false)} />
+            <ManualStockForm onFormSubmit={handleFormSubmit} currentData={data} />
           </DialogContent>
         </Dialog>
       </header>
@@ -146,3 +152,5 @@ export function StoreInventory({ data }: StoreInventoryProps) {
     </div>
   );
 }
+
+    

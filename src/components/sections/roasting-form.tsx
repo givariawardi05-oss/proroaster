@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useTransition } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -8,10 +8,9 @@ import { useActionState } from "react";
 import { createRoastingBatch } from "@/lib/actions";
 import { toast } from "@/hooks/use-toast";
 import { formatRupiah, getTodayDateString } from "@/lib/utils";
-import type { WarehouseItem } from "@/lib/definitions";
+import type { GlobalData, WarehouseItem } from "@/lib/definitions";
 
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SubmitButton } from "@/components/submit-button";
@@ -35,12 +34,12 @@ type RoastingFormValues = z.infer<typeof roastingSchema>;
 interface RoastingFormProps {
   nextBatchId: string;
   availableBeans: WarehouseItem[];
-  onFormSubmit: () => void;
+  onFormSubmit: (newData: GlobalData) => void;
+  currentData: GlobalData;
 }
 
-export function RoastingForm({ nextBatchId, availableBeans, onFormSubmit }: RoastingFormProps) {
-  const [state, formAction] = useActionState(createRoastingBatch, null);
-  const [isPending, startTransition] = useTransition();
+export function RoastingForm({ nextBatchId, availableBeans, onFormSubmit, currentData }: RoastingFormProps) {
+  const [state, formAction, isPending] = useActionState(createRoastingBatch.bind(null, currentData), null);
 
   const {
     register,
@@ -59,6 +58,7 @@ export function RoastingForm({ nextBatchId, availableBeans, onFormSubmit }: Roas
       gasCost: 50000,
       laborCost: 100000,
       otherCost: 25000,
+      hppPerKg: 0,
     },
   });
 
@@ -89,10 +89,10 @@ export function RoastingForm({ nextBatchId, availableBeans, onFormSubmit }: Roas
 
   useEffect(() => {
     if (!state) return;
-    if (state.status === "success") {
+    if (state.status === "success" && state.data) {
       toast({ title: "Sukses!", description: state.message });
       reset();
-      onFormSubmit();
+      onFormSubmit(state.data);
     } else if (state.status === "error") {
       toast({
         title: "Error!",
@@ -102,18 +102,8 @@ export function RoastingForm({ nextBatchId, availableBeans, onFormSubmit }: Roas
     }
   }, [state, onFormSubmit, reset]);
   
-  const onSubmit = (data: RoastingFormValues) => {
-    const formData = new FormData();
-    Object.keys(data).forEach(key => {
-        formData.append(key, (data as any)[key]);
-    });
-    startTransition(() => {
-      formAction(formData);
-    });
-  };
-
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form action={formAction} onSubmit={handleSubmit(() => formAction(new FormData(document.querySelector('form')!)))} className="space-y-4">
       <input type="hidden" {...register('hppPerKg')} />
       {/* Inputs */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -199,3 +189,5 @@ export function RoastingForm({ nextBatchId, availableBeans, onFormSubmit }: Roas
     </form>
   );
 }
+
+    

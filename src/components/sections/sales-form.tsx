@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useTransition } from "react";
+import React, { useEffect } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -8,12 +8,11 @@ import { useActionState } from "react";
 import { createSale } from "@/lib/actions";
 import { toast } from "@/hooks/use-toast";
 import { formatRupiah, getTodayDateString } from "@/lib/utils";
-import type { StoreInventoryItem } from "@/lib/definitions";
+import type { GlobalData, StoreInventoryItem, SalesItem } from "@/lib/definitions";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trash2, PlusCircle } from "lucide-react";
 import { SubmitButton } from "@/components/submit-button";
@@ -42,12 +41,12 @@ type SalesFormValues = z.infer<typeof salesSchema>;
 interface SalesFormProps {
   nextInvoiceNumber: string;
   availableProducts: StoreInventoryItem[];
-  onFormSubmit: () => void;
+  onFormSubmit: (newData: GlobalData) => void;
+  currentData: GlobalData;
 }
 
-export function SalesForm({ nextInvoiceNumber, availableProducts, onFormSubmit }: SalesFormProps) {
-  const [state, formAction] = useActionState(createSale, null);
-  const [isPending, startTransition] = useTransition();
+export function SalesForm({ nextInvoiceNumber, availableProducts, onFormSubmit, currentData }: SalesFormProps) {
+  const [state, formAction, isPending] = useActionState(createSale.bind(null, currentData), null);
 
   const {
     register,
@@ -67,6 +66,7 @@ export function SalesForm({ nextInvoiceNumber, availableProducts, onFormSubmit }
       paymentMethod: "Cash",
       shippingCost: 0,
       items: [{ name: "", qty: 0, price: 0, discount: 0 }],
+      total: 0,
     },
   });
 
@@ -98,10 +98,10 @@ export function SalesForm({ nextInvoiceNumber, availableProducts, onFormSubmit }
 
   useEffect(() => {
     if (!state) return;
-    if (state.status === "success") {
+    if (state.status === "success" && state.data) {
       toast({ title: "Sukses!", description: state.message });
       reset();
-      onFormSubmit();
+      onFormSubmit(state.data);
     } else if (state.status === "error") {
       toast({ title: "Error!", description: state.message, variant: "destructive" });
     }
@@ -115,22 +115,9 @@ export function SalesForm({ nextInvoiceNumber, availableProducts, onFormSubmit }
     }
   };
 
-  const onSubmit = (data: SalesFormValues) => {
-    const formData = new FormData();
-    Object.keys(data).forEach(key => {
-        if (key === 'items') {
-            formData.append(key, JSON.stringify(data[key]));
-        } else {
-            formData.append(key, (data as any)[key]);
-        }
-    });
-    startTransition(() => {
-      formAction(formData);
-    });
-  };
   
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form action={formAction} onSubmit={handleSubmit(() => formAction(new FormData(document.querySelector('form')!)))} className="space-y-4">
       <input type="hidden" {...register('total')} />
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div><Label>No. Invoice</Label><Input {...register("invoiceNumber")} readOnly /></div>
@@ -206,3 +193,5 @@ export function SalesForm({ nextInvoiceNumber, availableProducts, onFormSubmit }
     </form>
   );
 }
+
+    

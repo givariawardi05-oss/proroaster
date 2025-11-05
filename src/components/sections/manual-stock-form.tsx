@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useEffect, useTransition } from "react";
+import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useActionState } from "react";
 import { addManualStock } from "@/lib/actions";
 import { toast } from "@/hooks/use-toast";
+import type { GlobalData } from "@/lib/definitions";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,12 +25,12 @@ const manualStockSchema = z.object({
 type ManualStockFormValues = z.infer<typeof manualStockSchema>;
 
 interface ManualStockFormProps {
-  onFormSubmit: () => void;
+  onFormSubmit: (newData: GlobalData) => void;
+  currentData: GlobalData;
 }
 
-export function ManualStockForm({ onFormSubmit }: ManualStockFormProps) {
-  const [state, formAction] = useActionState(addManualStock, null);
-  const [isPending, startTransition] = useTransition();
+export function ManualStockForm({ onFormSubmit, currentData }: ManualStockFormProps) {
+  const [state, formAction, isPending] = useActionState(addManualStock.bind(null, currentData), null);
 
   const {
     register,
@@ -49,10 +50,10 @@ export function ManualStockForm({ onFormSubmit }: ManualStockFormProps) {
 
   useEffect(() => {
     if (!state) return;
-    if (state.status === "success") {
+    if (state.status === "success" && state.data) {
       toast({ title: "Sukses!", description: state.message });
       reset();
-      onFormSubmit();
+      onFormSubmit(state.data);
     } else if (state.status === "error") {
       toast({
         title: "Error!",
@@ -62,18 +63,8 @@ export function ManualStockForm({ onFormSubmit }: ManualStockFormProps) {
     }
   }, [state, onFormSubmit, reset]);
   
-  const onSubmit = (data: ManualStockFormValues) => {
-    const formData = new FormData();
-    Object.keys(data).forEach(key => {
-        formData.append(key, (data as any)[key]);
-    });
-    startTransition(() => {
-      formAction(formData);
-    });
-  };
-
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form action={formAction} onSubmit={handleSubmit(() => formAction(new FormData(document.querySelector('form')!)))} className="space-y-4">
       <div>
         <Label htmlFor="productName">Nama Produk</Label>
         <Input id="productName" {...register("productName")} placeholder="contoh: Gayo Wine" />
@@ -114,3 +105,5 @@ export function ManualStockForm({ onFormSubmit }: ManualStockFormProps) {
     </form>
   );
 }
+
+    

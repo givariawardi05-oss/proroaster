@@ -1,18 +1,18 @@
 export type PurchaseItem = {
-    id: string;
+    id?: string; // made optional
     name: string;
     qty: number;
     price: number;
-    total: number;
+    total?: number; // made optional
 };
 
 export type SalesItem = {
-    id: string;
+    id?: string; // made optional
     name: string;
     qty: number;
     price: number;
     discount: number;
-    total: number;
+    total?: number; // made optional
 };
 
 export type WarehouseItem = {
@@ -87,6 +87,7 @@ export type Transaction = {
     Kategori: string;
     Debit: number;
     Kredit: number;
+    balance: number;
 };
 
 export type Asset = {
@@ -136,3 +137,5 @@ export type SectionName =
     | 'balance-sheet'
     | 'settings'
     | 'sync';
+
+    

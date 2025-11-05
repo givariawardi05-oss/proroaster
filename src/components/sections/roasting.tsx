@@ -26,11 +26,17 @@ import { RoastingForm } from './roasting-form';
 
 interface RoastingProps {
   data: GlobalData;
+  onDataChange: (data: GlobalData) => void;
 }
 
-export function Roasting({ data }: RoastingProps) {
+export function Roasting({ data, onDataChange }: RoastingProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const availableBeans = data.warehouseData.filter(item => item.Stock_Kg > 0);
+
+  const handleFormSubmit = (newData: GlobalData) => {
+    onDataChange(newData);
+    setIsDialogOpen(false);
+  }
 
   return (
     <div className="space-y-6">
@@ -56,7 +62,8 @@ export function Roasting({ data }: RoastingProps) {
             <RoastingForm
               nextBatchId={data.nextIds.roastingBatch}
               availableBeans={availableBeans}
-              onFormSubmit={() => setIsDialogOpen(false)}
+              onFormSubmit={handleFormSubmit}
+              currentData={data}
             />
           </DialogContent>
         </Dialog>
@@ -114,3 +121,5 @@ export function Roasting({ data }: RoastingProps) {
     </div>
   );
 }
+
+    

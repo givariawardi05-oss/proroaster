@@ -26,10 +26,16 @@ import { PurchaseForm } from './purchase-form';
 
 interface PurchasesProps {
   data: GlobalData;
+  onDataChange: (data: GlobalData) => void;
 }
 
-export function Purchases({ data }: PurchasesProps) {
+export function Purchases({ data, onDataChange }: PurchasesProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  
+  const handleFormSubmit = (newData: GlobalData) => {
+      onDataChange(newData);
+      setIsDialogOpen(false);
+  }
 
   return (
     <div className="space-y-6">
@@ -54,7 +60,8 @@ export function Purchases({ data }: PurchasesProps) {
             </DialogHeader>
             <PurchaseForm
               nextInvoiceNumber={data.nextIds.purchaseInvoice}
-              onFormSubmit={() => setIsDialogOpen(false)}
+              onFormSubmit={handleFormSubmit}
+              currentData={data}
             />
           </DialogContent>
         </Dialog>
@@ -112,3 +119,5 @@ export function Purchases({ data }: PurchasesProps) {
     </div>
   );
 }
+
+    

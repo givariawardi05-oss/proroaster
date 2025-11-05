@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useTransition } from "react";
+import React, { useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -8,6 +8,7 @@ import { useActionState } from "react";
 import { createPurchase } from "@/lib/actions";
 import { toast } from "@/hooks/use-toast";
 import { formatRupiah, getTodayDateString } from "@/lib/utils";
+import type { GlobalData, PurchaseItem } from "@/lib/definitions";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -33,12 +34,12 @@ type PurchaseFormValues = z.infer<typeof purchaseSchema>;
 
 interface PurchaseFormProps {
   nextInvoiceNumber: string;
-  onFormSubmit: () => void;
+  onFormSubmit: (newData: GlobalData) => void;
+  currentData: GlobalData;
 }
 
-export function PurchaseForm({ nextInvoiceNumber, onFormSubmit }: PurchaseFormProps) {
-  const [state, formAction] = useActionState(createPurchase, null);
-  const [isPending, startTransition] = useTransition();
+export function PurchaseForm({ nextInvoiceNumber, onFormSubmit, currentData }: PurchaseFormProps) {
+  const [state, formAction, isPending] = useActionState(createPurchase.bind(null, currentData), null);
 
   const {
     register,
@@ -72,7 +73,7 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit }: PurchaseFormPr
 
   useEffect(() => {
     if (!state) return;
-    if (state.status === "success") {
+    if (state.status === "success" && state.data) {
       toast({ title: "Sukses!", description: state.message });
       reset({
         invoiceNumber: `FP-${Date.now()}`,
@@ -81,7 +82,7 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit }: PurchaseFormPr
         items: [{ name: "", qty: 0, price: 0 }],
         total: 0,
       });
-      onFormSubmit();
+      onFormSubmit(state.data);
     } else if (state.status === "error") {
       toast({
         title: "Error!",
@@ -90,23 +91,19 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit }: PurchaseFormPr
       });
     }
   }, [state, onFormSubmit, reset]);
-
-  const onSubmit = (data: PurchaseFormValues) => {
-    const formData = new FormData();
-    Object.keys(data).forEach(key => {
-        if (key === 'items') {
-            formData.append(key, JSON.stringify(data[key]));
-        } else {
-            formData.append(key, (data as any)[key]);
-        }
-    });
-    startTransition(() => {
-      formAction(formData);
-    });
-  };
   
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form action={formAction} onSubmit={handleSubmit((data) => {
+        const formData = new FormData();
+        Object.entries(data).forEach(([key, value]) => {
+            if (key === 'items') {
+                formData.append(key, JSON.stringify(value));
+            } else {
+                formData.append(key, String(value));
+            }
+        });
+        formAction(formData);
+    })} className="space-y-4">
       <input type="hidden" {...register('total')} />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
@@ -182,3 +179,5 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit }: PurchaseFormPr
     </form>
   );
 }
+
+    

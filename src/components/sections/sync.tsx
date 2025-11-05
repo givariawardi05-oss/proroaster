@@ -13,38 +13,48 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { useTransition } from 'react';
+import { useActionState, useTransition } from 'react';
 import { resetAllData } from '@/lib/actions';
 import { toast } from '@/hooks/use-toast';
 import { AlertTriangle, Download, Upload } from 'lucide-react';
 import { getAllData, writeAllData } from '@/lib/local-storage-helpers';
+import type { GlobalData } from '@/lib/definitions';
 
-export function Sync() {
-  const [isPending, startTransition] = useTransition();
+interface SyncProps {
+  currentData: GlobalData;
+  onDataChange: (data: GlobalData) => void;
+}
 
-  const handleReset = () => {
-    startTransition(async () => {
-      const result = await resetAllData();
-      if (result.status === 'success') {
+export function Sync({ currentData, onDataChange }: SyncProps) {
+  const [state, formAction, isPending] = useActionState(resetAllData.bind(null, currentData), null);
+
+ React.useEffect(() => {
+    if (!state) return;
+    if (state.status === 'success' && state.data) {
         toast({
           title: 'Reset Berhasil',
-          description: result.message,
+          description: state.message,
         });
-        window.location.reload();
-      } else {
+        onDataChange(state.data);
+    } else if (state.status === 'error') {
         toast({
           title: 'Reset Gagal',
-          description: result.message,
+          description: state.message,
           variant: 'destructive',
         });
-      }
-    });
-  };
+    }
+ }, [state, onDataChange]);
+
 
   const handleExport = async () => {
-    const data = await getAllData();
+    // We use currentData from props to ensure we export the latest state
+    const dataToExport = {
+      ...currentData,
+      nextIds: undefined, // Don't export volatile state
+      currentBalance: undefined, // Don't export calculated state
+    };
     const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
-      JSON.stringify(data, null, 2)
+      JSON.stringify(dataToExport, null, 2)
     )}`;
     const link = document.createElement("a");
     link.href = jsonString;
@@ -65,9 +75,10 @@ export function Sync() {
             const data = JSON.parse(text);
             // Basic validation
             if (data.settings && Array.isArray(data.transactions)) {
-                await writeAllData(data);
-                toast({ title: "Impor Berhasil", description: "Data berhasil dipulihkan. Halaman akan dimuat ulang." });
-                setTimeout(() => window.location.reload(), 1500);
+                await writeAllData(data); // Write the imported data to localStorage
+                const freshData = await getAllData(true); // Force reload from localStorage
+                onDataChange(freshData as GlobalData); // Update the main state
+                toast({ title: "Impor Berhasil", description: "Data berhasil dipulihkan." });
             } else {
                 throw new Error("Invalid data structure in JSON file.");
             }
@@ -76,6 +87,8 @@ export function Sync() {
         }
     };
     reader.readAsText(file);
+    // Reset file input to allow importing the same file again
+    event.target.value = '';
   };
 
   return (
@@ -125,9 +138,11 @@ export function Sync() {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Batal</AlertDialogCancel>
-                <AlertDialogAction onClick={handleReset} disabled={isPending}>
-                  {isPending ? 'Mereset...' : 'Ya, Hapus Semua Data'}
-                </AlertDialogAction>
+                <form action={formAction}>
+                    <SubmitButton variant="destructive" pending={isPending} pendingText="Mereset...">
+                        Ya, Hapus Semua Data
+                    </SubmitButton>
+                </form>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
@@ -136,3 +151,5 @@ export function Sync() {
     </div>
   );
 }
+
+    

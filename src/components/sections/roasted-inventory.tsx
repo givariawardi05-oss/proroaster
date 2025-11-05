@@ -20,9 +20,10 @@ import { toast } from '@/hooks/use-toast';
 
 interface RoastedInventoryProps {
   data: GlobalData;
+  onDataChange: (data: GlobalData) => void;
 }
 
-export function RoastedInventory({ data }: RoastedInventoryProps) {
+export function RoastedInventory({ data, onDataChange }: RoastedInventoryProps) {
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
 
@@ -55,9 +56,10 @@ export function RoastedInventory({ data }: RoastedInventoryProps) {
   const handleTransfer = () => {
     startTransition(async () => {
         const itemsToTransfer = Array.from(selectedItems).map(id => ({ id }));
-        const result = await transferToStore(itemsToTransfer);
-        if (result.status === 'success') {
+        const result = await transferToStore(data, itemsToTransfer);
+        if (result.status === 'success' && result.data) {
             toast({ title: 'Sukses', description: result.message });
+            onDataChange(result.data);
             setSelectedItems(new Set());
         } else {
             toast({ title: 'Error', description: result.message, variant: 'destructive' });
@@ -141,3 +143,5 @@ export function RoastedInventory({ data }: RoastedInventoryProps) {
     </div>
   );
 }
+
+    

@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useTransition } from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -14,6 +14,7 @@ import type { GlobalData } from '@/lib/definitions';
 
 interface SettingsProps {
   data: GlobalData;
+  onDataChange: (data: GlobalData) => void;
 }
 
 const settingsSchema = z.object({
@@ -24,9 +25,8 @@ const settingsSchema = z.object({
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
 
-export function Settings({ data }: SettingsProps) {
-  const [state, formAction] = useActionState(saveSettings, null);
-  const [isPending, startTransition] = useTransition();
+export function Settings({ data, onDataChange }: SettingsProps) {
+  const [state, formAction, isPending] = useActionState(saveSettings.bind(null, data), null);
 
   const {
     register,
@@ -43,8 +43,9 @@ export function Settings({ data }: SettingsProps) {
 
   useEffect(() => {
     if (!state) return;
-    if (state.status === 'success') {
+    if (state.status === 'success' && state.data) {
       toast({ title: 'Sukses!', description: state.message });
+      onDataChange(state.data);
     } else if (state.status === 'error') {
       toast({
         title: 'Error!',
@@ -52,17 +53,7 @@ export function Settings({ data }: SettingsProps) {
         variant: 'destructive',
       });
     }
-  }, [state]);
-
-  const onSubmit = (data: SettingsFormValues) => {
-    const formData = new FormData();
-    Object.keys(data).forEach(key => {
-        formData.append(key, (data as any)[key]);
-    });
-    startTransition(() => {
-      formAction(formData);
-    });
-  };
+  }, [state, onDataChange]);
 
   return (
     <div className="space-y-6">
@@ -77,7 +68,7 @@ export function Settings({ data }: SettingsProps) {
           <CardDescription>Perubahan pada pengaturan akan mempengaruhi kalkulasi di seluruh sistem.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-2xl">
+          <form action={formAction} onSubmit={handleSubmit(() => formAction(new FormData(document.querySelector('form')!)))} className="space-y-6 max-w-2xl">
             <div>
               <Label htmlFor="company_name">Nama Perusahaan</Label>
               <Input id="company_name" {...register('company_name')} />
@@ -108,3 +99,5 @@ export function Settings({ data }: SettingsProps) {
     </div>
   );
 }
+
+    

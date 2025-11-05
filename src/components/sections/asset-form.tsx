@@ -8,6 +8,7 @@ import { useActionState } from "react";
 import { createAsset } from "@/lib/actions";
 import { toast } from "@/hooks/use-toast";
 import { getTodayDateString } from "@/lib/utils";
+import type { GlobalData } from "@/lib/definitions";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,12 +26,12 @@ const assetSchema = z.object({
 type AssetFormValues = z.infer<typeof assetSchema>;
 
 interface AssetFormProps {
-  onFormSubmit: () => void;
+  onFormSubmit: (newData: GlobalData) => void;
+  currentData: GlobalData;
 }
 
-export function AssetForm({ onFormSubmit }: AssetFormProps) {
-  const [state, formAction] = useActionState(createAsset, null);
-  const [isPending, startTransition] = useTransition();
+export function AssetForm({ onFormSubmit, currentData }: AssetFormProps) {
+  const [state, formAction, isPending] = useActionState(createAsset.bind(null, currentData), null);
 
   const {
     register,
@@ -49,27 +50,17 @@ export function AssetForm({ onFormSubmit }: AssetFormProps) {
 
   useEffect(() => {
     if (!state) return;
-    if (state.status === "success") {
+    if (state.status === "success" && state.data) {
       toast({ title: "Sukses!", description: state.message });
       reset();
-      onFormSubmit();
+      onFormSubmit(state.data);
     } else if (state.status === "error") {
       toast({ title: "Error!", description: state.message, variant: "destructive" });
     }
   }, [state, onFormSubmit, reset]);
   
-  const onSubmit = (data: AssetFormValues) => {
-    const formData = new FormData();
-    Object.keys(data).forEach(key => {
-        formData.append(key, (data as any)[key]);
-    });
-    startTransition(() => {
-      formAction(formData);
-    });
-  };
-
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form action={formAction} onSubmit={handleSubmit(() => formAction(new FormData(document.querySelector('form')!)))} className="space-y-4">
         <div>
           <Label htmlFor="name">Nama Aset</Label>
           <Input id="name" {...register("name")} />
@@ -120,3 +111,5 @@ export function AssetForm({ onFormSubmit }: AssetFormProps) {
     </form>
   );
 }
+
+    

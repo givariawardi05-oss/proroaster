@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { SidebarProvider, SidebarInset, SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
+import React, { useState, useEffect, useCallback } from 'react';
+import { SidebarProvider, useSidebar } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import type { GlobalData, SectionName } from '@/lib/definitions';
 import { Dashboard } from './sections/dashboard';
@@ -21,6 +21,7 @@ import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Bell, Search, Menu } from 'lucide-react';
 import { fetchAllData } from '@/lib/data';
+import { writeAllData } from '@/lib/local-storage-helpers';
 
 interface MainLayoutProps {
   initialData: GlobalData;
@@ -39,8 +40,17 @@ export default function MainLayout({ initialData }: MainLayoutProps) {
       setIsDataLoaded(true);
     };
     loadData();
-  }, [activeSection]); // Re-fetch data when section changes to reflect updates
+  }, []);
 
+  const handleDataChange = useCallback(async (newData: GlobalData) => {
+    // Omit calculated/volatile fields before writing to localStorage
+    const { nextIds, currentBalance, ...dataToWrite } = newData;
+    await writeAllData(dataToWrite);
+    
+    // Re-fetch to get fresh calculated values
+    const reloadedData = await fetchAllData();
+    setData(reloadedData);
+  }, []);
   
   const sectionTitles: Record<SectionName, string> = {
     dashboard: 'Dashboard',
@@ -66,29 +76,29 @@ export default function MainLayout({ initialData }: MainLayoutProps) {
       case 'dashboard':
         return <Dashboard data={data} />;
       case 'purchases':
-        return <Purchases data={data} />;
+        return <Purchases data={data} onDataChange={handleDataChange} />;
       case 'warehouse':
         return <Warehouse data={data} />;
       case 'roasting':
-        return <Roasting data={data} />;
+        return <Roasting data={data} onDataChange={handleDataChange} />;
       case 'roasted-inventory':
-        return <RoastedInventory data={data} />;
+        return <RoastedInventory data={data} onDataChange={handleDataChange} />;
       case 'store-inventory':
-        return <StoreInventory data={data} />;
+        return <StoreInventory data={data} onDataChange={handleDataChange} />;
       case 'sales':
-        return <Sales data={data} />;
+        return <Sales data={data} onDataChange={handleDataChange} />;
       case 'transactions':
         return <Transactions data={data} />;
       case 'reports':
         return <Reports />;
       case 'assets':
-        return <Assets data={data} />;
+        return <Assets data={data} onDataChange={handleDataChange} />;
       case 'balance-sheet':
         return <BalanceSheet data={data} />;
       case 'settings':
-        return <Settings data={data} />;
+        return <Settings data={data} onDataChange={handleDataChange}/>;
       case 'sync':
-        return <Sync />;
+        return <Sync currentData={data} onDataChange={handleDataChange} />;
       default:
         return <Dashboard data={data} />;
     }
@@ -123,3 +133,5 @@ export default function MainLayout({ initialData }: MainLayoutProps) {
     </>
   );
 }
+
+    

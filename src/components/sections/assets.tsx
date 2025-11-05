@@ -26,9 +26,10 @@ import { AssetForm } from './asset-form';
 
 interface AssetsProps {
   data: GlobalData;
+  onDataChange: (data: GlobalData) => void;
 }
 
-export function Assets({ data }: AssetsProps) {
+export function Assets({ data, onDataChange }: AssetsProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const processedAssets = useMemo(() => data.assetsData.map(asset => {
@@ -56,6 +57,11 @@ export function Assets({ data }: AssetsProps) {
     });
     return { totalCurrentAssets, totalFixedAssets, totalAllAssets: totalCurrentAssets + totalFixedAssets };
   }, [processedAssets]);
+  
+  const handleFormSubmit = (newData: GlobalData) => {
+    onDataChange(newData);
+    setIsDialogOpen(false);
+  }
 
   return (
     <div className="space-y-6">
@@ -76,7 +82,7 @@ export function Assets({ data }: AssetsProps) {
               <DialogTitle>Tambah Aset Baru</DialogTitle>
               <DialogDescription>Isi formulir di bawah ini untuk menambahkan aset baru ke dalam sistem.</DialogDescription>
             </DialogHeader>
-            <AssetForm onFormSubmit={() => setIsDialogOpen(false)} />
+            <AssetForm onFormSubmit={handleFormSubmit} currentData={data} />
           </DialogContent>
         </Dialog>
       </header>
@@ -127,3 +133,5 @@ export function Assets({ data }: AssetsProps) {
     </div>
   );
 }
+
+    

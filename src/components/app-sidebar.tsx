@@ -36,16 +36,18 @@ interface AppSidebarProps {
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'sales', label: 'Penjualan', icon: FileText },
   { id: 'purchases', label: 'Pembelanjaan', icon: ShoppingCart },
-  { id: 'warehouse', label: 'Gudang Green Bean', icon: Warehouse },
+  { type: 'separator', id: 'sep1' },
   { id: 'roasting', label: 'Roasting', icon: Flame },
+  { id: 'warehouse', label: 'Gudang Green Bean', icon: Warehouse },
   { id: 'roasted-inventory', label: 'Gudang Roasted', icon: Package },
   { id: 'store-inventory', label: 'Inventaris Toko', icon: Store },
-  { id: 'sales', label: 'Penjualan', icon: FileText },
+  { type: 'separator', id: 'sep2' },
   { id: 'transactions', label: 'Transaksi', icon: CreditCard },
-  { id: 'reports', label: 'Laporan', icon: BarChart3 },
-  { id: 'assets', label: 'Aset', icon: Building2 },
   { id: 'balance-sheet', label: 'Neraca', icon: Scale },
+  { id: 'assets', label: 'Aset', icon: Building2 },
+  { id: 'reports', label: 'Laporan', icon: BarChart3 },
 ];
 
 export function AppSidebar({ activeSection, setActiveSection }: AppSidebarProps) {
@@ -53,14 +55,14 @@ export function AppSidebar({ activeSection, setActiveSection }: AppSidebarProps)
   
   const handleSectionClick = (section: SectionName) => {
     setActiveSection(section);
-    setOpen(false); // Close sidebar on mobile after clicking an item
+    if(useSidebar) setOpen(false); // Close sidebar on mobile after clicking an item
   }
 
   return (
     <Sidebar>
       <SidebarHeader>
         <div className="flex items-center gap-3">
-            <div className="flex size-11 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-purple-600">
+            <div className="flex size-11 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-orange-400 dark:from-primary dark:to-orange-600">
                 <Coffee className="size-6 text-primary-foreground" />
             </div>
             <div>
@@ -70,18 +72,22 @@ export function AppSidebar({ activeSection, setActiveSection }: AppSidebarProps)
         </div>
       </SidebarHeader>
       <SidebarMenu>
-        {navItems.map((item) => (
-          <SidebarMenuItem key={item.id}>
-            <SidebarMenuButton
-              onClick={() => handleSectionClick(item.id as SectionName)}
-              isActive={activeSection === item.id}
-              className='justify-start'
-            >
-              <item.icon className="size-5" />
-              <span>{item.label}</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        ))}
+        {navItems.map((item) => 
+            item.type === 'separator' ? (
+                <SidebarSeparator key={item.id} className="my-1" />
+            ) : (
+                <SidebarMenuItem key={item.id}>
+                    <SidebarMenuButton
+                    onClick={() => handleSectionClick(item.id as SectionName)}
+                    isActive={activeSection === item.id}
+                    className='justify-start'
+                    >
+                    <item.icon className="size-5" />
+                    <span>{item.label}</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+            )
+        )}
       </SidebarMenu>
       <SidebarFooter>
         <SidebarSeparator />

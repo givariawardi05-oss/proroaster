@@ -3,7 +3,7 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
-import { PanelLeft, X } from "lucide-react"
+import { PanelLeft } from "lucide-react"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 import { TooltipProvider } from "@/components/ui/tooltip"
 
-const SIDEBAR_WIDTH = "18rem"; // Adjusted width
+const SIDEBAR_WIDTH = "16rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 
 type SidebarContext = {
@@ -131,12 +131,12 @@ const Sidebar = React.forwardRef<
                 <SheetContent
                     ref={ref}
                     side="left"
-                    className={cn("w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground flex flex-col", className)}
+                    className={cn("w-[var(--sidebar-width)] bg-sidebar p-0 text-sidebar-foreground flex flex-col", className)}
                     {...props}
                 >
-                    <SheetHeader className='p-4'>
-                        <SheetTitle className='sr-only'>Sidebar Menu</SheetTitle>
-                        <SheetDescription className='sr-only'>Navigation links for the application.</SheetDescription>
+                    <SheetHeader className='p-4 sr-only'>
+                        <SheetTitle>Sidebar Menu</SheetTitle>
+                        <SheetDescription>Navigation links for the application.</SheetDescription>
                     </SheetHeader>
                     {children}
                 </SheetContent>
@@ -153,7 +153,7 @@ const Sidebar = React.forwardRef<
                 className)}
             {...props}
         >
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 overflow-hidden flex flex-col">
              {children}
             </div>
         </div>
@@ -276,7 +276,7 @@ const SidebarMenu = React.forwardRef<
   <ul
     ref={ref}
     data-sidebar="menu"
-    className={cn("flex w-full min-w-0 flex-col gap-1 px-2", className)}
+    className={cn("flex w-full min-w-0 flex-col gap-1 px-3 py-2", className)}
     {...props}
   />
 ))
@@ -296,7 +296,7 @@ const SidebarMenuItem = React.forwardRef<
 SidebarMenuItem.displayName = "SidebarMenuItem"
 
 const sidebarMenuButtonVariants = cva(
-  "peer/menu-button flex w-full items-center gap-3 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-primary data-[active=true]:font-medium data-[active=true]:text-sidebar-primary-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0",
+  "peer/menu-button flex w-full items-center gap-3 overflow-hidden rounded-md px-3 text-left text-sm outline-none ring-sidebar-ring transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-primary data-[active=true]:font-semibold data-[active=true]:text-sidebar-primary-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0",
   {
     variants: {
       size: {

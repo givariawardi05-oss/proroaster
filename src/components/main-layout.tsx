@@ -19,10 +19,9 @@ import { Settings } from './sections/settings';
 import { Sync } from './sections/sync';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
-import { Bell, Search, Menu } from 'lucide-react';
+import { Bell, Search, Menu, Loader2 } from 'lucide-react';
 import { fetchAllData } from '@/lib/data';
 import { writeAllData } from '@/lib/local-storage-helpers';
-import { SidebarProvider } from './ui/sidebar';
 
 interface MainLayoutProps {
   initialData: GlobalData;
@@ -43,12 +42,8 @@ export default function MainLayout({ initialData }: MainLayoutProps) {
     loadData();
   }, []);
 
-  const handleDataChange = useCallback(async (newData: GlobalData | Omit<GlobalData, 'nextIds' | 'currentBalance'>) => {
-    // Only write storable data to localStorage
-    const { nextIds, currentBalance, ...dataToWrite } = newData;
-    await writeAllData(dataToWrite);
-
-    // Re-fetch all data which includes recalculating volatile state
+  const handleDataChange = useCallback(async (newData: Omit<GlobalData, 'nextIds' | 'currentBalance'>) => {
+    await writeAllData(newData);
     const reloadedData = await fetchAllData();
     setData(reloadedData);
   }, []);
@@ -71,7 +66,11 @@ export default function MainLayout({ initialData }: MainLayoutProps) {
 
   const renderSection = () => {
     if (!isDataLoaded) {
-        return <div className="flex justify-center items-center h-full">Loading data...</div>;
+        return (
+            <div className="flex h-full w-full items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        );
     }
     switch (activeSection) {
       case 'dashboard':
@@ -119,7 +118,7 @@ export default function MainLayout({ initialData }: MainLayoutProps) {
               </div>
               <div className='relative w-full max-w-xs'>
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="Cari..." className="pl-9 bg-input" />
+                  <Input placeholder="Cari..." className="pl-9 bg-secondary" />
               </div>
               <div className='ml-auto flex items-center gap-2'>
                   <Button variant="ghost" size="icon" className="rounded-full">

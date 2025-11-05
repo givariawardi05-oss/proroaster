@@ -53,31 +53,45 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit, currentData, ini
     formState: { errors },
   } = useForm<PurchaseFormValues>({
     resolver: zodResolver(purchaseSchema),
+    defaultValues: initialData 
+        ? {
+            invoiceNumber: initialData.No_Faktur,
+            date: initialData.Tanggal,
+            supplier: initialData.Supplier,
+            items: initialData.items,
+            total: initialData.Total_Faktur,
+          }
+        : {
+            invoiceNumber: nextInvoiceNumber,
+            date: getTodayDateString(),
+            items: [{ name: "", qty: 0, price: 0 }],
+            supplier: "",
+            total: 0,
+          }
   });
 
   const { fields, append, remove } = useFieldArray({
     control,
     name: "items",
   });
-
+  
   useEffect(() => {
-    if (initialData) {
-        reset({
+    // This effect now correctly resets the form when the editing target changes, or when switching back to create mode.
+    reset(initialData 
+        ? {
             invoiceNumber: initialData.No_Faktur,
             date: initialData.Tanggal,
             supplier: initialData.Supplier,
             items: initialData.items,
             total: initialData.Total_Faktur,
-        });
-    } else {
-        reset({
+          }
+        : {
             invoiceNumber: nextInvoiceNumber,
             date: getTodayDateString(),
             items: [{ name: "", qty: 0, price: 0 }],
             supplier: "",
             total: 0,
-        });
-    }
+          });
   }, [initialData, nextInvoiceNumber, reset]);
 
 
@@ -92,7 +106,6 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit, currentData, ini
     if (!state) return;
     if (state.status === "success" && state.data) {
       toast({ title: "Sukses!", description: state.message });
-      reset();
       onFormSubmit(state.data);
     } else if (state.status === "error") {
       toast({
@@ -101,7 +114,7 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit, currentData, ini
         variant: "destructive",
       });
     }
-  }, [state, onFormSubmit, reset, toast]);
+  }, [state, onFormSubmit, toast]);
   
   const onFormSubmitWithData = (data: PurchaseFormValues) => {
     startTransition(() => {

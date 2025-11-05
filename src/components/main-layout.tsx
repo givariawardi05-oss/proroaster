@@ -113,7 +113,7 @@ export default function MainLayout({ initialData }: MainLayoutProps) {
             'lg:ml-64'
           )}>
            <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
-             <div className="flex h-full w-full items-center max-w-screen-2xl mx-auto">
+             <div className="flex h-full w-full items-center">
                 <Button variant="ghost" size="icon" onClick={() => setOpen(true)} className='lg:hidden'>
                     <Menu className='h-6 w-6' />
                     <span className='sr-only'>Buka Sidebar</span>
@@ -133,7 +133,7 @@ export default function MainLayout({ initialData }: MainLayoutProps) {
               </div>
           </header>
           <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-              <div className="max-w-screen-2xl mx-auto">
+              <div className="">
                 {renderSection()}
               </div>
           </main>

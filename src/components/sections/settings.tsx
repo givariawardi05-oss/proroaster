@@ -25,7 +25,7 @@ const settingsSchema = z.object({
 type SettingsFormValues = z.infer<typeof settingsSchema>;
 
 export function Settings({ data, onDataChange }: SettingsProps) {
-  const [state, formAction, isPending] = useActionState(saveSettings.bind(null, data), null);
+  const [state, formAction, isPending] = useActionState(saveSettings, null);
   const { toast } = useToast();
   const [isTransitioning, startTransition] = useTransition();
 
@@ -56,13 +56,14 @@ export function Settings({ data, onDataChange }: SettingsProps) {
     }
   }, [state, onDataChange, toast]);
 
-  const onFormSubmitWithData = (data: SettingsFormValues) => {
+  const onFormSubmitWithData = (formData: SettingsFormValues) => {
     startTransition(() => {
-        const formData = new FormData();
-        Object.entries(data).forEach(([key, value]) => {
-            formData.append(key, String(value));
+        const payload = new FormData();
+        Object.entries(formData).forEach(([key, value]) => {
+            payload.append(key, String(value));
         });
-        formAction(formData);
+        payload.append('currentData', JSON.stringify(data));
+        formAction(payload);
     });
   }
 

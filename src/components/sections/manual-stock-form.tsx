@@ -29,7 +29,7 @@ interface ManualStockFormProps {
 }
 
 export function ManualStockForm({ onFormSubmit, currentData }: ManualStockFormProps) {
-  const [state, formAction, isPending] = useActionState(addManualStock.bind(null, currentData), null);
+  const [state, formAction, isPending] = useActionState(addManualStock, null);
   const { toast } = useToast();
   const [isTransitioning, startTransition] = useTransition();
 
@@ -70,6 +70,7 @@ export function ManualStockForm({ onFormSubmit, currentData }: ManualStockFormPr
         Object.entries(data).forEach(([key, value]) => {
             formData.append(key, String(value));
         });
+        formData.append('currentData', JSON.stringify(currentData));
         formAction(formData);
     });
   }

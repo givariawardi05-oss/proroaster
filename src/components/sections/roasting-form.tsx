@@ -38,7 +38,7 @@ interface RoastingFormProps {
 }
 
 export function RoastingForm({ nextBatchId, availableBeans, onFormSubmit, currentData }: RoastingFormProps) {
-  const [state, formAction, isPending] = useActionState(createRoastingBatch.bind(null, currentData), null);
+  const [state, formAction, isPending] = useActionState(createRoastingBatch, null);
   const { toast } = useToast();
   const [isTransitioning, startTransition] = useTransition();
 
@@ -117,6 +117,7 @@ export function RoastingForm({ nextBatchId, availableBeans, onFormSubmit, curren
         Object.entries(data).forEach(([key, value]) => {
             formData.append(key, String(value));
         });
+        formData.append('currentData', JSON.stringify(currentData));
         formAction(formData);
     });
   }

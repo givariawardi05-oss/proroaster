@@ -45,7 +45,7 @@ interface SalesFormProps {
 }
 
 export function SalesForm({ nextInvoiceNumber, availableProducts, onFormSubmit, currentData }: SalesFormProps) {
-  const [state, formAction, isPending] = useActionState(createSale.bind(null, currentData), null);
+  const [state, formAction, isPending] = useActionState(createSale, null);
   const { toast } = useToast();
   const [isTransitioning, startTransition] = useTransition();
 
@@ -135,6 +135,7 @@ export function SalesForm({ nextInvoiceNumber, availableProducts, onFormSubmit, 
                 formData.append(key, String(value));
             }
         });
+        formData.append('currentData', JSON.stringify(currentData));
         formAction(formData);
     });
   }

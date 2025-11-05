@@ -38,7 +38,7 @@ interface PurchaseFormProps {
 }
 
 export function PurchaseForm({ nextInvoiceNumber, onFormSubmit, currentData }: PurchaseFormProps) {
-  const [state, formAction, isPending] = useActionState(createPurchase.bind(null, currentData), null);
+  const [state, formAction, isPending] = useActionState(createPurchase, null);
   const { toast } = useToast();
   const [isTransitioning, startTransition] = useTransition();
 
@@ -101,6 +101,7 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit, currentData }: P
         formData.append('invoiceNumber', data.invoiceNumber);
         formData.append('date', data.date);
         formData.append('supplier', data.supplier);
+        formData.append('currentData', JSON.stringify(currentData));
         formAction(formData);
     });
   }

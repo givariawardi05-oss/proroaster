@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useTransition } from "react";
+import React, { useActionState, useEffect, useTransition } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -8,7 +8,6 @@ import { createAsset } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
 import { getTodayDateString } from "@/lib/utils";
 import type { GlobalData } from "@/lib/definitions";
-import { useActionState } from "react";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,7 +30,7 @@ interface AssetFormProps {
 }
 
 export function AssetForm({ onFormSubmit, currentData }: AssetFormProps) {
-  const [state, formAction, isPending] = useActionState(createAsset.bind(null, currentData), null);
+  const [state, formAction, isPending] = useActionState(createAsset, null);
   const { toast } = useToast();
   const [isTransitioning, startTransition] = useTransition();
 
@@ -67,6 +66,7 @@ export function AssetForm({ onFormSubmit, currentData }: AssetFormProps) {
       Object.entries(data).forEach(([key, value]) => {
           formData.append(key, String(value));
       });
+      formData.append('currentData', JSON.stringify(currentData));
       formAction(formData);
     });
   }

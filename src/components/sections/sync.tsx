@@ -1,5 +1,5 @@
-'use client';
-import React, { useActionState } from 'react';
+"use client";
+import React, { useActionState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -26,10 +26,10 @@ interface SyncProps {
 }
 
 export function Sync({ currentData, onDataChange }: SyncProps) {
-  const [state, formAction, isPending] = useActionState(resetAllData.bind(null, currentData), null);
+  const [state, formAction, isPending] = useActionState(resetAllData, null);
   const { toast } = useToast();
 
- React.useEffect(() => {
+ useEffect(() => {
     if (!state) return;
     if (state.status === 'success' && state.data) {
         toast({
@@ -90,6 +90,11 @@ export function Sync({ currentData, onDataChange }: SyncProps) {
     // Reset file input to allow importing the same file again
     event.target.value = '';
   };
+  
+  const handleResetAction = (formData: FormData) => {
+    formData.append('currentData', JSON.stringify(currentData));
+    formAction(formData);
+  }
 
   return (
     <div className="space-y-6">
@@ -138,7 +143,7 @@ export function Sync({ currentData, onDataChange }: SyncProps) {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Batal</AlertDialogCancel>
-                <form action={formAction}>
+                <form action={handleResetAction}>
                     <AlertDialogAction asChild>
                         <SubmitButton variant="destructive" pending={isPending} pendingText="Mereset...">
                             Ya, Hapus Semua Data

@@ -1,5 +1,6 @@
 "use server";
 import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
 import type { GlobalData, PurchaseItem, SalesItem, Asset, Settings, StorableGlobalData } from './definitions';
 
 const safeParseFloat = (val: any): number => {
@@ -16,8 +17,9 @@ type ActionState = {
 
 
 // --- Purchase Invoice Action ---
-export async function createPurchase(db: GlobalData, formData: FormData): Promise<ActionState> {
+export async function createPurchase(prevState: ActionState, formData: FormData): Promise<ActionState> {
     try {
+        const db: GlobalData = JSON.parse(formData.get('currentData') as string);
         const items = JSON.parse(formData.get('items') as string) as PurchaseItem[];
         const totalFaktur = safeParseFloat(formData.get('total'));
         
@@ -35,11 +37,11 @@ export async function createPurchase(db: GlobalData, formData: FormData): Promis
             purchaseInvoices: [...db.purchaseInvoices, purchaseData],
             transactions: [...db.transactions],
             warehouseData: [...db.warehouseData],
-            roastingBatches: [...db.roastingBatches],
-            roastedInventory: [...db.roastedInventory],
-            storeInventory: [...db.storeInventory],
-            salesInvoices: [...db.salesInvoices],
-            assetsData: [...db.assetsData],
+            roastingBatches: db.roastingBatches,
+            roastedInventory: db.roastedInventory,
+            storeInventory: db.storeInventory,
+            salesInvoices: db.salesInvoices,
+            assetsData: db.assetsData,
             settings: db.settings,
         };
 
@@ -98,8 +100,9 @@ export async function createPurchase(db: GlobalData, formData: FormData): Promis
 
 
 // --- Roasting Batch Action ---
-export async function createRoastingBatch(db: GlobalData, formData: FormData): Promise<ActionState> {
+export async function createRoastingBatch(prevState: ActionState, formData: FormData): Promise<ActionState> {
     try {
+        const db: GlobalData = JSON.parse(formData.get('currentData') as string);
         const inputKg = safeParseFloat(formData.get('inputQty'));
         const yieldPercent = safeParseFloat(formData.get('yieldPercent'));
         const outputKg = inputKg * (yieldPercent / 100);
@@ -119,14 +122,14 @@ export async function createRoastingBatch(db: GlobalData, formData: FormData): P
         };
 
         let updatedDb: StorableGlobalData = {
-            purchaseInvoices: [...db.purchaseInvoices],
+            purchaseInvoices: db.purchaseInvoices,
             transactions: [...db.transactions],
             warehouseData: [...db.warehouseData],
             roastingBatches: [...db.roastingBatches],
             roastedInventory: [...db.roastedInventory],
-            storeInventory: [...db.storeInventory],
-            salesInvoices: [...db.salesInvoices],
-            assetsData: [...db.assetsData],
+            storeInventory: db.storeInventory,
+            salesInvoices: db.salesInvoices,
+            assetsData: db.assetsData,
             settings: db.settings,
         };
         
@@ -275,8 +278,9 @@ export async function transferToStore(db: GlobalData, itemsToTransfer: { id: str
 }
 
 // --- Sales Invoice Action ---
-export async function createSale(db: GlobalData, formData: FormData): Promise<ActionState> {
+export async function createSale(prevState: ActionState, formData: FormData): Promise<ActionState> {
     try {
+        const db: GlobalData = JSON.parse(formData.get('currentData') as string);
         const items = JSON.parse(formData.get('items') as string) as SalesItem[];
         const totalInvoice = safeParseFloat(formData.get('total'));
         const paymentStatus = formData.get('paymentStatus') as string;
@@ -294,14 +298,14 @@ export async function createSale(db: GlobalData, formData: FormData): Promise<Ac
         };
         
         let updatedDb: StorableGlobalData = {
-            purchaseInvoices: [...db.purchaseInvoices],
+            purchaseInvoices: db.purchaseInvoices,
             transactions: [...db.transactions],
-            warehouseData: [...db.warehouseData],
-            roastingBatches: [...db.roastingBatches],
-            roastedInventory: [...db.roastedInventory],
+            warehouseData: db.warehouseData,
+            roastingBatches: db.roastingBatches,
+            roastedInventory: db.roastedInventory,
             storeInventory: [...db.storeInventory],
             salesInvoices: [...db.salesInvoices, salesData],
-            assetsData: [...db.assetsData],
+            assetsData: db.assetsData,
             settings: db.settings,
         };
 
@@ -364,8 +368,9 @@ export async function createSale(db: GlobalData, formData: FormData): Promise<Ac
 
 
 // --- Add Manual Stock Action ---
-export async function addManualStock(db: GlobalData, formData: FormData): Promise<ActionState> {
+export async function addManualStock(prevState: ActionState, formData: FormData): Promise<ActionState> {
     try {
+        const db: GlobalData = JSON.parse(formData.get('currentData') as string);
         const stockData = {
             Nama_Produk: formData.get('productName') as string,
             Kategori: formData.get('category') as string,
@@ -404,8 +409,9 @@ export async function addManualStock(db: GlobalData, formData: FormData): Promis
 }
 
 // --- Asset Action ---
-export async function createAsset(db: GlobalData, formData: FormData): Promise<ActionState> {
+export async function createAsset(prevState: ActionState, formData: FormData): Promise<ActionState> {
     try {
+        const db: GlobalData = JSON.parse(formData.get('currentData') as string);
         const value = safeParseFloat(formData.get('value'));
         const assetData: Asset = {
             id: `asset-${Date.now()}`,
@@ -430,7 +436,7 @@ export async function createAsset(db: GlobalData, formData: FormData): Promise<A
 }
 
 // --- Settings Action ---
-export async function saveSettings(db: GlobalData, formData: FormData): Promise<ActionState> {
+export async function saveSettings(prevState: ActionState, formData: FormData): Promise<ActionState> {
     const SettingsSchema = z.object({
         company_name: z.string().min(1, "Nama perusahaan wajib diisi"),
         stock_low_limit: z.coerce.number().min(0, "Batas stok tidak boleh negatif"),
@@ -448,6 +454,7 @@ export async function saveSettings(db: GlobalData, formData: FormData): Promise<
     }
 
     try {
+        const db: GlobalData = JSON.parse(formData.get('currentData') as string);
         const updatedDb: StorableGlobalData = {
             ...db,
             settings: { ...db.settings, ...parsed.data }
@@ -463,8 +470,9 @@ export async function saveSettings(db: GlobalData, formData: FormData): Promise<
 
 
 // --- Reset Data Action ---
-export async function resetAllData(db: GlobalData): Promise<ActionState> {
+export async function resetAllData(prevState: ActionState, formData: FormData): Promise<ActionState> {
     try {
+        const db: GlobalData = JSON.parse(formData.get('currentData') as string);
         const newDb: StorableGlobalData = {
             warehouseData: [],
             roastingBatches: [],

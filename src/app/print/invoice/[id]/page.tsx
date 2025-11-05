@@ -1,0 +1,137 @@
+'use client';
+import React, { useEffect, useState } from 'react';
+import { getAllData } from '@/lib/local-storage-helpers';
+import type { GlobalData, SalesInvoice } from '@/lib/definitions';
+import { notFound } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Loader2, Printer } from 'lucide-react';
+import { formatRupiah } from '@/lib/utils';
+import { Coffee } from 'lucide-react';
+
+export default function PrintableInvoicePage({ params }: { params: { id: string } }) {
+  const [invoice, setInvoice] = useState<SalesInvoice | null>(null);
+  const [settings, setSettings] = useState<GlobalData['settings'] | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const data = await getAllData();
+      const foundInvoice = data.salesInvoices.find(inv => inv.id === params.id);
+      if (foundInvoice) {
+        setInvoice(foundInvoice);
+        setSettings(data.settings);
+      }
+      setIsLoading(false);
+    };
+    fetchData();
+  }, [params.id]);
+
+  useEffect(() => {
+    if (!isLoading && invoice) {
+        // Automatically trigger print dialog
+        setTimeout(() => window.print(), 500);
+    }
+  }, [isLoading, invoice]);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!invoice) {
+    notFound();
+    return null;
+  }
+  
+  const subtotal = invoice.items.reduce((acc, item) => acc + item.price * item.qty, 0);
+  const totalDiscount = invoice.items.reduce((acc, item) => acc + (item.price * item.qty * (item.discount / 100)), 0);
+  const totalAfterDiscount = subtotal - totalDiscount;
+  const shippingCost = invoice.items.reduce((acc, item: any) => acc + (item.shippingCost || 0), 0); // shippingCost might not be on item
+  const grandTotal = invoice.Total_Invoice;
+
+  return (
+    <div className="bg-white text-black p-8 font-sans max-w-4xl mx-auto">
+       <header className="flex justify-between items-start mb-8 border-b pb-6">
+        <div>
+            <div className="flex items-center gap-3 mb-4">
+                <div className="flex size-12 items-center justify-center rounded-lg bg-gray-800 text-white">
+                    <Coffee className="size-7" />
+                </div>
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-800">{settings?.company_name || 'BlackHorse Roastery'}</h1>
+                    <p className="text-sm text-gray-500">Jl. Kopi No. 123, Kota Kopi, Indonesia</p>
+                </div>
+            </div>
+            <div className="text-sm">
+                <h2 className="font-semibold text-gray-700">Tagihan Kepada:</h2>
+                <p className="font-medium text-lg">{invoice.Customer}</p>
+                {/* Add more customer details if available */}
+            </div>
+        </div>
+        <div className="text-right">
+            <h1 className="text-4xl font-bold text-gray-800 uppercase tracking-wider">Invoice</h1>
+            <div className="space-y-1 mt-2 text-sm">
+                <p><span className="font-semibold">No. Invoice:</span> {invoice.No_Invoice}</p>
+                <p><span className="font-semibold">Tanggal:</span> {new Date(invoice.Tanggal).toLocaleDateString('id-ID')}</p>
+                <p><span className="font-semibold">Jatuh Tempo:</span> {new Date(invoice.Jatuh_Tempo).toLocaleDateString('id-ID')}</p>
+            </div>
+        </div>
+      </header>
+      
+      <main className="mb-8">
+        <table className="w-full text-left">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="p-3 font-semibold">Produk</th>
+              <th className="p-3 text-right font-semibold">Qty</th>
+              <th className="p-3 text-right font-semibold">Harga</th>
+              <th className="p-3 text-right font-semibold">Diskon</th>
+              <th className="p-3 text-right font-semibold">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            {invoice.items.map((item, index) => (
+              <tr key={index} className="border-b">
+                <td className="p-3">{item.name}</td>
+                <td className="p-3 text-right">{item.qty} kg</td>
+                <td className="p-3 text-right">{formatRupiah(item.price)}</td>
+                <td className="p-3 text-right">{item.discount > 0 ? `${item.discount}%` : '-'}</td>
+                <td className="p-3 text-right">{formatRupiah(item.price * item.qty * (1 - item.discount / 100))}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </main>
+
+      <footer className="flex justify-between items-start">
+        <div className="text-sm text-gray-600">
+            <h3 className="font-semibold text-gray-800 mb-2">Catatan:</h3>
+            <p>Pembayaran dapat dilakukan melalui transfer ke:</p>
+            <p className="font-medium">Bank Kopi Indonesia - 123-456-7890</p>
+            <p className="font-medium">a.n. {settings?.company_name || 'BlackHorse Roastery'}</p>
+        </div>
+        <div className="w-1/3 text-sm">
+            <div className="flex justify-between border-b py-1"><span className="text-gray-600">Subtotal</span><span>{formatRupiah(subtotal)}</span></div>
+            <div className="flex justify-between border-b py-1"><span className="text-gray-600">Diskon</span><span className='text-red-600'>-{formatRupiah(totalDiscount)}</span></div>
+            <div className="flex justify-between font-bold text-lg bg-gray-100 p-3 rounded-md mt-2">
+                <span>TOTAL</span>
+                <span>{formatRupiah(grandTotal)}</span>
+            </div>
+        </div>
+      </footer>
+       <div className="text-center mt-16 text-xs text-gray-400">
+        <p>Terima kasih telah berbisnis dengan kami!</p>
+      </div>
+
+      <div className="fixed bottom-4 right-4 no-print">
+        <Button onClick={() => window.print()}>
+            <Printer className="mr-2 h-4 w-4" />
+            Cetak Ulang
+        </Button>
+      </div>
+    </div>
+  );
+}

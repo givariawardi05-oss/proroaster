@@ -91,3 +91,13 @@
     @apply bg-background/80 backdrop-blur-sm;
   }
 }
+
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+  .no-print {
+    display: none;
+  }
+}

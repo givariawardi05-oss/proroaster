@@ -21,7 +21,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { formatRupiah, cn } from '@/lib/utils';
 import type { GlobalData, SalesInvoice, StoreInventoryItem } from '@/lib/definitions';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Printer } from 'lucide-react';
 import { SalesForm } from './sales-form';
 
 interface SalesProps {
@@ -54,6 +54,11 @@ export function Sales({ data, onDataChange }: SalesProps) {
     onDataChange(newData);
     setIsDialogOpen(false);
   }
+
+  const handlePrint = (invoiceId: string) => {
+    const url = `/print/invoice/${invoiceId}`;
+    window.open(url, '_blank');
+  };
 
   return (
     <div className="space-y-6">
@@ -117,8 +122,11 @@ export function Sales({ data, onDataChange }: SalesProps) {
                       {inv.Status_Bayar}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="outline" size="sm">Detail</Button>
+                  <TableCell className="text-right space-x-2">
+                    <Button variant="outline" size="sm" onClick={() => handlePrint(inv.id)}>
+                      <Printer className="mr-2 h-4 w-4" />
+                      Cetak
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))

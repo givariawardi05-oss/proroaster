@@ -1,0 +1,108 @@
+"use client";
+
+import React, { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useFormState } from "react-dom";
+import { addManualStock } from "@/lib/actions";
+import { toast } from "@/hooks/use-toast";
+
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SubmitButton } from "@/components/submit-button";
+
+const manualStockSchema = z.object({
+  productName: z.string().min(3, "Nama produk minimal 3 karakter"),
+  category: z.string().min(1, "Kategori wajib diisi"),
+  stock: z.coerce.number().min(0, "Stok tidak boleh negatif"),
+  hpp: z.coerce.number().min(0, "HPP tidak boleh negatif"),
+  sellPrice: z.coerce.number().min(0, "Harga jual tidak boleh negatif"),
+});
+
+type ManualStockFormValues = z.infer<typeof manualStockSchema>;
+
+interface ManualStockFormProps {
+  onFormSubmit: () => void;
+}
+
+export function ManualStockForm({ onFormSubmit }: ManualStockFormProps) {
+  const [state, formAction] = useFormState(addManualStock, null);
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm<ManualStockFormValues>({
+    resolver: zodResolver(manualStockSchema),
+    defaultValues: {
+        category: "Roasted Beans",
+        stock: 0,
+        hpp: 0,
+        sellPrice: 0,
+    }
+  });
+
+  useEffect(() => {
+    if (state?.status === "success") {
+      toast({ title: "Sukses!", description: state.message });
+      onFormSubmit();
+    } else if (state?.status === "error") {
+      toast({
+        title: "Error!",
+        description: state.message,
+        variant: "destructive",
+      });
+    }
+  }, [state, onFormSubmit]);
+  
+  const processForm = (data: ManualStockFormValues) => {
+    const formData = new FormData();
+    Object.entries(data).forEach(([key, value]) => formData.append(key, String(value)));
+    formAction(formData);
+  }
+
+  return (
+    <form onSubmit={handleSubmit(processForm)} className="space-y-4">
+      <div>
+        <Label htmlFor="productName">Nama Produk</Label>
+        <Input id="productName" {...register("productName")} placeholder="contoh: Gayo Wine" />
+        {errors.productName && <p className="text-destructive text-sm mt-1">{errors.productName.message}</p>}
+      </div>
+       <div>
+          <Label>Kategori</Label>
+          <Select onValueChange={(value) => setValue('category', value, { shouldValidate: true })} defaultValue="Roasted Beans">
+            <SelectTrigger><SelectValue placeholder="Pilih Kategori" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Roasted Beans">Roasted Beans</SelectItem>
+              <SelectItem value="Merchandise">Merchandise</SelectItem>
+              <SelectItem value="Other">Lainnya</SelectItem>
+            </SelectContent>
+          </Select>
+           {errors.category && <p className="text-destructive text-sm mt-1">{errors.category.message}</p>}
+        </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <Label htmlFor="stock">Stok (kg)</Label>
+          <Input id="stock" type="number" step="0.01" {...register("stock")} />
+          {errors.stock && <p className="text-destructive text-sm mt-1">{errors.stock.message}</p>}
+        </div>
+        <div>
+          <Label htmlFor="hpp">HPP/kg (Rp)</Label>
+          <Input id="hpp" type="number" {...register("hpp")} />
+          {errors.hpp && <p className="text-destructive text-sm mt-1">{errors.hpp.message}</p>}
+        </div>
+        <div>
+          <Label htmlFor="sellPrice">Harga Jual/kg (Rp)</Label>
+          <Input id="sellPrice" type="number" {...register("sellPrice")} />
+          {errors.sellPrice && <p className="text-destructive text-sm mt-1">{errors.sellPrice.message}</p>}
+        </div>
+      </div>
+      <div className="flex justify-end pt-4">
+        <SubmitButton pendingText="Menyimpan...">Simpan Produk</SubmitButton>
+      </div>
+    </form>
+  );
+}

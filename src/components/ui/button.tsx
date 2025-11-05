@@ -1,6 +1,7 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
+import { Check, Loader2 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -18,6 +19,8 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
+        pending: "bg-primary/80 text-primary-foreground cursor-not-allowed",
+        success: "bg-green-500 text-white cursor-not-allowed",
       },
       size: {
         default: "h-10 px-4 py-2",
@@ -37,17 +40,25 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean
+  pending?: boolean
+  success?: boolean
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, pending, success, children, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
+    
+    const currentVariant = success ? 'success' : pending ? 'pending' : variant;
+
     return (
       <Comp
-        className={cn(buttonVariants({ variant, size, className }))}
+        className={cn(buttonVariants({ variant: currentVariant, size, className }))}
         ref={ref}
+        disabled={pending || success || props.disabled}
         {...props}
-      />
+      >
+        {pending ? <Loader2 className="animate-spin" /> : success ? <Check /> : children}
+      </Comp>
     )
   }
 )

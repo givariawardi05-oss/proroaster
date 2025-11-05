@@ -1,7 +1,7 @@
 "use server";
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import type { GlobalData, PurchaseItem, SalesItem, Asset, Settings, StorableGlobalData, BlendComponent } from './definitions';
+import type { GlobalData, PurchaseItem, SalesItem, Asset, Settings, StorableGlobalData, BlendComponent, PurchaseInvoice } from './definitions';
 
 const safeParseFloat = (val: any): number => {
     const num = parseFloat(val);
@@ -601,5 +601,57 @@ export async function createBlend(prevState: ActionState, formData: FormData): P
     } catch (e: any) {
         console.error("Error creating blend:", e);
         return { message: `Gagal membuat blend: ${e.message}`, status: 'error' };
+    }
+}
+
+
+// --- Delete Purchase Invoice Action ---
+export async function deletePurchase(prevState: ActionState, formData: FormData): Promise<ActionState> {
+    try {
+        const db: GlobalData = JSON.parse(formData.get('currentData') as string);
+        const invoiceId = formData.get('invoiceId') as string;
+        
+        const invoiceToDelete = db.purchaseInvoices.find(inv => inv.id === invoiceId);
+        if (!invoiceToDelete) {
+            throw new Error("Faktur tidak ditemukan.");
+        }
+
+        // 1. Remove purchase invoice
+        const updatedPurchaseInvoices = db.purchaseInvoices.filter(inv => inv.id !== invoiceId);
+
+        // 2. Remove transaction
+        const updatedTransactions = db.transactions.filter(t => t.Referensi !== invoiceToDelete.No_Faktur);
+
+        // 3. Revert warehouse stock
+        const updatedWarehouseData = [...db.warehouseData];
+        for (const item of invoiceToDelete.items) {
+            const warehouseItemIndex = updatedWarehouseData.findIndex(wh => wh.Nama_Green_Beans === item.name);
+            if (warehouseItemIndex > -1) {
+                const whItem = updatedWarehouseData[warehouseItemIndex];
+                const itemQty = safeParseFloat(item.qty);
+                const itemValue = itemQty * safeParseFloat(item.price);
+
+                const newStock = whItem.Stock_Kg - itemQty;
+                const newTotalValue = whItem.Total_Value - itemValue;
+                
+                whItem.Stock_Kg = newStock < 0 ? 0 : newStock;
+                whItem.Total_Value = newTotalValue < 0 ? 0 : newTotalValue;
+                whItem.Avg_HPP = whItem.Stock_Kg > 0 ? whItem.Total_Value / whItem.Stock_Kg : 0;
+            }
+        }
+        
+        const updatedDb: StorableGlobalData = {
+            ...db,
+            purchaseInvoices: updatedPurchaseInvoices,
+            transactions: updatedTransactions,
+            warehouseData: updatedWarehouseData,
+        };
+
+        revalidatePath('/');
+        return { message: 'Faktur pembelian berhasil dihapus!', status: 'success', data: updatedDb };
+
+    } catch (e: any) {
+        console.error("Error deleting purchase:", e);
+        return { message: `Gagal menghapus faktur: ${e.message}`, status: 'error' };
     }
 }

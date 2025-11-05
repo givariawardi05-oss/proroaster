@@ -7,7 +7,7 @@ import { z } from "zod";
 import { createPurchase } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
 import { formatRupiah, getTodayDateString } from "@/lib/utils";
-import type { GlobalData, PurchaseItem } from "@/lib/definitions";
+import type { GlobalData, PurchaseItem, PurchaseInvoice } from "@/lib/definitions";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -35,9 +35,10 @@ interface PurchaseFormProps {
   nextInvoiceNumber: string;
   onFormSubmit: (newData: GlobalData | Omit<GlobalData, 'nextIds' | 'currentBalance'>) => void;
   currentData: GlobalData;
+  initialData?: PurchaseInvoice | null;
 }
 
-export function PurchaseForm({ nextInvoiceNumber, onFormSubmit, currentData }: PurchaseFormProps) {
+export function PurchaseForm({ nextInvoiceNumber, onFormSubmit, currentData, initialData = null }: PurchaseFormProps) {
   const [state, formAction, isPending] = useActionState(createPurchase, null);
   const { toast } = useToast();
   const [isTransitioning, startTransition] = useTransition();
@@ -52,18 +53,33 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit, currentData }: P
     formState: { errors },
   } = useForm<PurchaseFormValues>({
     resolver: zodResolver(purchaseSchema),
-    defaultValues: {
-      invoiceNumber: nextInvoiceNumber,
-      date: getTodayDateString(),
-      items: [{ name: "", qty: 0, price: 0 }],
-      total: 0,
-    },
   });
 
   const { fields, append, remove } = useFieldArray({
     control,
     name: "items",
   });
+
+  useEffect(() => {
+    if (initialData) {
+        reset({
+            invoiceNumber: initialData.No_Faktur,
+            date: initialData.Tanggal,
+            supplier: initialData.Supplier,
+            items: initialData.items,
+            total: initialData.Total_Faktur,
+        });
+    } else {
+        reset({
+            invoiceNumber: nextInvoiceNumber,
+            date: getTodayDateString(),
+            items: [{ name: "", qty: 0, price: 0 }],
+            supplier: "",
+            total: 0,
+        });
+    }
+  }, [initialData, nextInvoiceNumber, reset]);
+
 
   const watchedItems = watch("items");
   const total = watchedItems.reduce((acc, item) => acc + (item.qty || 0) * (item.price || 0), 0);
@@ -76,13 +92,7 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit, currentData }: P
     if (!state) return;
     if (state.status === "success" && state.data) {
       toast({ title: "Sukses!", description: state.message });
-      reset({
-        invoiceNumber: `FP-${Date.now()}`,
-        date: getTodayDateString(),
-        supplier: '',
-        items: [{ name: "", qty: 0, price: 0 }],
-        total: 0,
-      });
+      reset();
       onFormSubmit(state.data);
     } else if (state.status === "error") {
       toast({
@@ -91,7 +101,7 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit, currentData }: P
         variant: "destructive",
       });
     }
-  }, [state, onFormSubmit, reset, nextInvoiceNumber, toast]);
+  }, [state, onFormSubmit, reset, toast]);
   
   const onFormSubmitWithData = (data: PurchaseFormValues) => {
     startTransition(() => {
@@ -122,7 +132,7 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit, currentData }: P
         </div>
         <div>
           <Label htmlFor="invoiceNumber">No. Faktur</Label>
-          <Input id="invoiceNumber" {...register("invoiceNumber")} readOnly />
+          <Input id="invoiceNumber" {...register("invoiceNumber")} readOnly={!!initialData} />
         </div>
       </div>
 
@@ -178,7 +188,9 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit, currentData }: P
       </div>
       
       <div className="flex justify-end gap-2 pt-4">
-         <SubmitButton pending={isPending || isTransitioning} pendingText="Menyimpan...">Simpan &amp; Masuk Warehouse</SubmitButton>
+         <SubmitButton pending={isPending || isTransitioning} pendingText="Menyimpan...">
+            {initialData ? 'Simpan Perubahan' : 'Simpan & Masuk Warehouse'}
+         </SubmitButton>
       </div>
     </form>
   );

@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,6 +8,23 @@ import {
   DialogTrigger,
   DialogDescription,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -21,8 +38,11 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { formatRupiah } from '@/lib/utils';
 import type { GlobalData, PurchaseInvoice } from '@/lib/definitions';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Trash2, Edit } from 'lucide-react';
 import { PurchaseForm } from './purchase-form';
+import { deletePurchase } from '@/lib/actions';
+import { useToast } from '@/hooks/use-toast';
+import { SubmitButton } from '../submit-button';
 
 interface PurchasesProps {
   data: GlobalData;
@@ -30,12 +50,50 @@ interface PurchasesProps {
 }
 
 export function Purchases({ data, onDataChange }: PurchasesProps) {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<PurchaseInvoice | null>(null);
+  const { toast } = useToast();
+
   const handleFormSubmit = (newData: GlobalData | Omit<GlobalData, 'nextIds' | 'currentBalance'>) => {
       onDataChange(newData);
-      setIsDialogOpen(false);
+      setIsFormOpen(false);
+      setSelectedInvoice(null);
   }
+
+  const handleDelete = async (invoiceId: string) => {
+    setIsDeleting(true);
+    const formData = new FormData();
+    formData.append('invoiceId', invoiceId);
+    formData.append('currentData', JSON.stringify(data));
+    
+    const result = await deletePurchase(null, formData);
+
+    if (result?.status === 'success' && result.data) {
+        toast({ title: "Sukses!", description: result.message });
+        onDataChange(result.data);
+    } else {
+        toast({ title: "Error!", description: result?.message, variant: "destructive" });
+    }
+    setIsDeleting(false);
+  };
+  
+  const openEditDialog = (invoice: PurchaseInvoice) => {
+      setSelectedInvoice(invoice);
+      setIsFormOpen(true);
+  }
+  
+  const openNewDialog = () => {
+      setSelectedInvoice(null);
+      setIsFormOpen(true);
+  }
+
+  useEffect(() => {
+    if (!isFormOpen) {
+      setSelectedInvoice(null);
+    }
+  }, [isFormOpen]);
+
 
   return (
     <div className="space-y-6">
@@ -44,24 +102,25 @@ export function Purchases({ data, onDataChange }: PurchasesProps) {
           <h2 className="text-2xl font-bold tracking-tight">Faktur Pembelanjaan</h2>
           <p className="text-muted-foreground">Catat semua pembelian green beans dari supplier.</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button onClick={openNewDialog}>
               <PlusCircle className="mr-2 h-4 w-4" />
               Buat Faktur Baru
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-4xl">
             <DialogHeader>
-              <DialogTitle>Faktur Pembelanjaan Baru</DialogTitle>
+              <DialogTitle>{selectedInvoice ? 'Edit Faktur Pembelian' : 'Faktur Pembelanjaan Baru'}</DialogTitle>
               <DialogDescription>
-                Isi detail pembelian di bawah ini. Stok akan otomatis masuk ke Gudang Green Beans.
+                {selectedInvoice ? 'Ubah detail faktur di bawah ini.' : 'Isi detail pembelian di bawah ini. Stok akan otomatis masuk ke Gudang Green Beans.'}
               </DialogDescription>
             </DialogHeader>
             <PurchaseForm
               nextInvoiceNumber={data.nextIds.purchaseInvoice}
               onFormSubmit={handleFormSubmit}
               currentData={data}
+              initialData={selectedInvoice}
             />
           </DialogContent>
         </Dialog>
@@ -98,9 +157,44 @@ export function Purchases({ data, onDataChange }: PurchasesProps) {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="outline" size="sm">
-                        Detail
-                      </Button>
+                       <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <span className="sr-only">Buka menu</span>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => openEditDialog(inv)}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              <span>Edit</span>
+                            </DropdownMenuItem>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                  <Trash2 className="mr-2 h-4 w-4 text-destructive" />
+                                  <span className="text-destructive">Hapus</span>
+                                </DropdownMenuItem>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Apakah Anda Yakin?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Tindakan ini akan menghapus faktur <span className="font-bold">{inv.No_Faktur}</span> secara permanen, mengembalikan stok, dan menghapus transaksi terkait.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Batal</AlertDialogCancel>
+                                  <AlertDialogAction asChild>
+                                    <SubmitButton onClick={() => handleDelete(inv.id)} variant="destructive" pending={isDeleting} pendingText="Menghapus...">
+                                      Ya, Hapus Faktur
+                                    </SubmitButton>
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))

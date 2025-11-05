@@ -18,7 +18,6 @@ import { BalanceSheet } from './sections/balance-sheet';
 import { Settings } from './sections/settings';
 import { Sync } from './sections/sync';
 import { Input } from './ui/input';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
 import { Bell, Search } from 'lucide-react';
 
@@ -95,10 +94,6 @@ export default function MainLayout({ initialData }: MainLayoutProps) {
                 <Button variant="ghost" size="icon" className="rounded-full">
                     <Bell className="h-5 w-5"/>
                 </Button>
-                 <Avatar>
-                    <AvatarImage src="https://i.pravatar.cc/150?u=a042581f4e29026704d" />
-                    <AvatarFallback>U</AvatarFallback>
-                </Avatar>
             </div>
         </header>
         <main className="p-4 sm:p-6 lg:p-8">
@@ -107,7 +102,7 @@ export default function MainLayout({ initialData }: MainLayoutProps) {
                   {sectionTitles[activeSection]}
                 </h1>
                 <p className="text-muted-foreground">
-                  {activeSection === 'dashboard' ? `Halo, Barbara! 👋 Ini yang terjadi di roastery Anda bulan ini.` : 'Kelola data dan lihat informasi terkait.'}
+                  {activeSection === 'dashboard' ? `Halo! 👋 Ini yang terjadi di roastery Anda bulan ini.` : 'Kelola data dan lihat informasi terkait.'}
                 </p>
             </div>
             {renderSection()}

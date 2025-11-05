@@ -148,8 +148,10 @@ const Sidebar = React.forwardRef<
         <div
             ref={ref}
             data-state={open ? 'open' : 'closed'}
-            className={cn("flex-col bg-sidebar text-sidebar-foreground transition-all duration-300 ease-in-out hidden lg:flex",
-                open ? 'w-[var(--sidebar-width)]' : 'w-0',
+            className={cn(
+                "flex-col bg-sidebar text-sidebar-foreground transition-transform duration-300 ease-in-out hidden lg:flex",
+                "w-[var(--sidebar-width)] shrink-0",
+                open ? 'translate-x-0' : '-translate-x-full',
                 className)}
             {...props}
         >

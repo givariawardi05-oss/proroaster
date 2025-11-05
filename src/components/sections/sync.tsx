@@ -1,5 +1,5 @@
 "use client";
-import React, { useActionState, useEffect } from 'react';
+import React, { useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -13,11 +13,10 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { resetAllData } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { AlertTriangle, Download, Upload } from 'lucide-react';
 import { writeAllData } from '@/lib/local-storage-helpers';
-import type { GlobalData } from '@/lib/definitions';
+import type { GlobalData, StorableGlobalData } from '@/lib/definitions';
 import { SubmitButton } from '../submit-button';
 
 interface SyncProps {
@@ -26,26 +25,8 @@ interface SyncProps {
 }
 
 export function Sync({ currentData, onDataChange }: SyncProps) {
-  const [state, formAction, isPending] = useActionState(resetAllData, null);
+  const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
-
- useEffect(() => {
-    if (!state) return;
-    if (state.status === 'success' && state.data) {
-        toast({
-          title: 'Reset Berhasil',
-          description: state.message,
-        });
-        onDataChange(state.data);
-    } else if (state.status === 'error') {
-        toast({
-          title: 'Reset Gagal',
-          description: state.message,
-          variant: 'destructive',
-        });
-    }
- }, [state, onDataChange, toast]);
-
 
   const handleExport = async () => {
     // We use currentData from props to ensure we export the latest state
@@ -91,10 +72,35 @@ export function Sync({ currentData, onDataChange }: SyncProps) {
     event.target.value = '';
   };
   
-  const handleResetAction = (formData: FormData) => {
-    formData.append('currentData', JSON.stringify(currentData));
-    formAction(formData);
-  }
+  const handleReset = () => {
+    startTransition(async () => {
+      try {
+        const newDb: StorableGlobalData = {
+          warehouseData: [],
+          roastingBatches: [],
+          roastedInventory: [],
+          storeInventory: [],
+          salesInvoices: [],
+          purchaseInvoices: [],
+          transactions: [],
+          assetsData: [],
+          settings: currentData.settings, // keep old settings
+        };
+        await writeAllData(newDb);
+        onDataChange(newDb);
+        toast({
+          title: 'Reset Berhasil',
+          description: 'Semua data transaksi berhasil direset!',
+        });
+      } catch (e: any) {
+        toast({
+          title: 'Reset Gagal',
+          description: e.message || 'Terjadi kesalahan saat mereset data.',
+          variant: 'destructive',
+        });
+      }
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -143,13 +149,11 @@ export function Sync({ currentData, onDataChange }: SyncProps) {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Batal</AlertDialogCancel>
-                <form action={handleResetAction}>
-                    <AlertDialogAction asChild>
-                        <SubmitButton variant="destructive" pending={isPending} pendingText="Mereset...">
-                            Ya, Hapus Semua Data
-                        </SubmitButton>
-                    </AlertDialogAction>
-                </form>
+                <AlertDialogAction asChild>
+                    <SubmitButton onClick={handleReset} variant="destructive" pending={isPending} pendingText="Mereset...">
+                        Ya, Hapus Semua Data
+                    </SubmitButton>
+                </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>

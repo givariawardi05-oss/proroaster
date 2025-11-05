@@ -11,6 +11,7 @@ import {
   SidebarSeparator,
   useSidebar,
 } from '@/components/ui/sidebar';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
     LayoutDashboard,
     ShoppingCart,
@@ -71,24 +72,26 @@ export function AppSidebar({ activeSection, setActiveSection }: AppSidebarProps)
             </div>
         </div>
       </SidebarHeader>
-      <SidebarMenu>
-        {navItems.map((item) => 
-            item.type === 'separator' ? (
-                <SidebarSeparator key={item.id} className="my-1" />
-            ) : (
-                <SidebarMenuItem key={item.id}>
-                    <SidebarMenuButton
-                    onClick={() => handleSectionClick(item.id as SectionName)}
-                    isActive={activeSection === item.id}
-                    className='justify-start'
-                    >
-                    <item.icon className="size-5" />
-                    <span>{item.label}</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-            )
-        )}
-      </SidebarMenu>
+      <ScrollArea className="flex-1">
+        <SidebarMenu>
+          {navItems.map((item) => 
+              item.type === 'separator' ? (
+                  <SidebarSeparator key={item.id} className="my-1" />
+              ) : (
+                  <SidebarMenuItem key={item.id}>
+                      <SidebarMenuButton
+                      onClick={() => handleSectionClick(item.id as SectionName)}
+                      isActive={activeSection === item.id}
+                      className='justify-start'
+                      >
+                      <item.icon className="size-5" />
+                      <span>{item.label}</span>
+                      </SidebarMenuButton>
+                  </SidebarMenuItem>
+              )
+          )}
+        </SidebarMenu>
+      </ScrollArea>
       <SidebarFooter>
         <SidebarSeparator />
         <SidebarMenuItem>

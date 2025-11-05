@@ -43,8 +43,10 @@ export default function MainLayout({ initialData }: MainLayoutProps) {
     loadData();
   }, []);
 
-  const handleDataChange = useCallback(async (newData: Omit<GlobalData, 'nextIds' | 'currentBalance'>) => {
-    await writeAllData(newData);
+  const handleDataChange = useCallback(async (newData: Partial<GlobalData>) => {
+    const freshData = await fetchAllData();
+    const updatedData = { ...freshData, ...newData };
+    await writeAllData(updatedData);
     const reloadedData = await fetchAllData();
     setData(reloadedData);
   }, []);
@@ -108,10 +110,7 @@ export default function MainLayout({ initialData }: MainLayoutProps) {
   return (
       <div className='flex h-screen bg-background'>
         <AppSidebar activeSection={activeSection} setActiveSection={setActiveSection} />
-        <div className={cn(
-            'flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out',
-            'lg:ml-64'
-          )}>
+        <div className="flex-1 flex flex-col overflow-hidden lg:ml-64">
            <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
              <div className="flex h-full w-full items-center">
                 <Button variant="ghost" size="icon" onClick={() => setOpen(true)} className='lg:hidden'>
@@ -133,7 +132,7 @@ export default function MainLayout({ initialData }: MainLayoutProps) {
               </div>
           </header>
           <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-              <div className="">
+              <div className="mx-auto w-full">
                 {renderSection()}
               </div>
           </main>

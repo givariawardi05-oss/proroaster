@@ -3,7 +3,6 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
-import { PanelLeft } from "lucide-react"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -12,13 +11,9 @@ import { Separator } from "@/components/ui/separator"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 import { TooltipProvider } from "@/components/ui/tooltip"
 
-const SIDEBAR_WIDTH = "16rem";
-const SIDEBAR_KEYBOARD_SHORTCUT = "b"
-
 type SidebarContext = {
   open: boolean
   setOpen: (open: boolean) => void
-  toggleSidebar: () => void
 }
 
 const SidebarContext = React.createContext<SidebarContext | null>(null)
@@ -39,61 +34,25 @@ const SidebarProvider = React.forwardRef<
   (
     {
       className,
-      style,
       children,
       ...props
     },
     ref
   ) => {
-    const isMobile = useIsMobile()
     const [open, setOpen] = React.useState(false)
-
-    React.useEffect(() => {
-        if (!isMobile) {
-            setOpen(true);
-        } else {
-            setOpen(false);
-        }
-    }, [isMobile]);
-
-    const toggleSidebar = React.useCallback(() => {
-      setOpen((open) => !open)
-    }, [])
-
-    React.useEffect(() => {
-      const handleKeyDown = (event: KeyboardEvent) => {
-        if (
-          event.key === SIDEBAR_KEYBOARD_SHORTCUT &&
-          (event.metaKey || event.ctrlKey)
-        ) {
-          event.preventDefault()
-          toggleSidebar()
-        }
-      }
-
-      window.addEventListener("keydown", handleKeyDown)
-      return () => window.removeEventListener("keydown", handleKeyDown)
-    }, [toggleSidebar])
 
     const contextValue = React.useMemo<SidebarContext>(
       () => ({
         open,
         setOpen,
-        toggleSidebar,
       }),
-      [open, setOpen, toggleSidebar]
+      [open, setOpen]
     )
 
     return (
       <SidebarContext.Provider value={contextValue}>
         <TooltipProvider delayDuration={0}>
           <div
-            style={
-              {
-                "--sidebar-width": SIDEBAR_WIDTH,
-                ...style,
-              } as React.CSSProperties
-            }
             className={cn(
               "group/sidebar-wrapper flex min-h-svh w-full",
               className
@@ -131,7 +90,7 @@ const Sidebar = React.forwardRef<
                 <SheetContent
                     ref={ref}
                     side="left"
-                    className={cn("w-[var(--sidebar-width)] bg-sidebar p-0 text-sidebar-foreground flex flex-col", className)}
+                    className={cn("w-64 bg-sidebar p-0 text-sidebar-foreground flex flex-col", className)}
                     {...props}
                 >
                     <SheetHeader className='p-4 sr-only'>
@@ -147,11 +106,8 @@ const Sidebar = React.forwardRef<
     return (
         <div
             ref={ref}
-            data-state={open ? 'open' : 'closed'}
             className={cn(
-                "flex-col bg-sidebar text-sidebar-foreground transition-all duration-300 ease-in-out hidden lg:flex",
-                "shrink-0",
-                open ? 'w-[var(--sidebar-width)]' : 'w-0',
+                "fixed inset-y-0 left-0 z-40 flex-col bg-sidebar text-sidebar-foreground hidden lg:flex w-64",
                 className)}
             {...props}
         >
@@ -163,50 +119,6 @@ const Sidebar = React.forwardRef<
   }
 )
 Sidebar.displayName = "Sidebar"
-
-
-const SidebarTrigger = React.forwardRef<
-  React.ElementRef<typeof Button>,
-  React.ComponentProps<typeof Button>
->(({ className, onClick, ...props }, ref) => {
-  const { toggleSidebar } = useSidebar()
-  const isMobile = useIsMobile()
-
-  if (!isMobile) return null;
-
-  return (
-    <Button
-      ref={ref}
-      data-sidebar="trigger"
-      variant="ghost"
-      size="icon"
-      className={cn("h-8 w-8", className)}
-      onClick={(event) => {
-        onClick?.(event)
-        toggleSidebar()
-      }}
-      {...props}
-    >
-      <PanelLeft />
-      <span className="sr-only">Toggle Sidebar</span>
-    </Button>
-  )
-})
-SidebarTrigger.displayName = "SidebarTrigger"
-
-const SidebarInset = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentProps<"main">
->(({ className, ...props }, ref) => {
-  return (
-    <main
-      ref={ref}
-      className={cn("flex-1", className)}
-      {...props}
-    />
-  )
-})
-SidebarInset.displayName = "SidebarInset"
 
 const SidebarHeader = React.forwardRef<
   HTMLDivElement,
@@ -354,12 +266,10 @@ export {
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
-  SidebarInset,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
   SidebarSeparator,
-  SidebarTrigger,
   useSidebar,
 }

@@ -22,6 +22,7 @@ import { Button } from './ui/button';
 import { Bell, Search, Menu, Loader2 } from 'lucide-react';
 import { fetchAllData } from '@/lib/data';
 import { writeAllData } from '@/lib/local-storage-helpers';
+import { cn } from '@/lib/utils';
 
 interface MainLayoutProps {
   initialData: GlobalData;
@@ -31,7 +32,7 @@ export default function MainLayout({ initialData }: MainLayoutProps) {
   const [activeSection, setActiveSection] = useState<SectionName>('dashboard');
   const [data, setData] = useState<GlobalData>(initialData);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
-  const { setOpen } = useSidebar();
+  const { setOpen, open } = useSidebar();
 
   useEffect(() => {
     const loadData = async () => {
@@ -107,7 +108,10 @@ export default function MainLayout({ initialData }: MainLayoutProps) {
   return (
       <div className='flex h-screen bg-background'>
         <AppSidebar activeSection={activeSection} setActiveSection={setActiveSection} />
-        <div className='flex-1 flex flex-col overflow-hidden'>
+        <div className={cn(
+            'flex-1 flex flex-col overflow-hidden transition-[margin-left] duration-300 ease-in-out',
+            'lg:ml-64'
+          )}>
            <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
               <Button variant="ghost" size="icon" onClick={() => setOpen(true)} className='lg:hidden'>
                   <Menu className='h-6 w-6' />

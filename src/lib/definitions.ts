@@ -1,3 +1,4 @@
+
 export type PurchaseItem = {
     name: string;
     qty: number;
@@ -107,7 +108,6 @@ export type NextIds = {
 
 export type BlendComponent = {
     id: string;
-    name: string;
     percentage: number;
 };
 

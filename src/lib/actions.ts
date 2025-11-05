@@ -1,3 +1,4 @@
+
 "use server";
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -123,7 +124,7 @@ export async function createRoastingBatch(prevState: ActionState, formData: Form
             Yield_Persen: `${yieldPercent}%`,
             Profile: formData.get('profile') as string,
             HPP_Per_Kg: safeParseFloat(formData.get('hppPerKg')),
-            Harga_Jual_Kg: 0, // Removed from form
+            Harga_Jual_Kg: 0,
             Status: 'Completed',
         };
 
@@ -131,7 +132,7 @@ export async function createRoastingBatch(prevState: ActionState, formData: Form
             purchaseInvoices: db.purchaseInvoices,
             transactions: [...db.transactions],
             warehouseData: [...db.warehouseData],
-            roastingBatches: [...db.roastingBatches],
+            roastingBatches: [...db.roastingBatches, batchData],
             roastedInventory: [...db.roastedInventory],
             storeInventory: db.storeInventory,
             salesInvoices: db.salesInvoices,
@@ -146,10 +147,7 @@ export async function createRoastingBatch(prevState: ActionState, formData: Form
             throw new Error(`Stok ${batchData.Green_Beans} tidak mencukupi.`);
         }
         
-        // 2. Add roasting batch
-        updatedDb.roastingBatches.push(batchData);
-
-        // 3. Update warehouse stock (deduct)
+        // 2. Update warehouse stock (deduct)
         const warehouseItem = updatedDb.warehouseData[warehouseItemIndex];
         const oldStock = safeParseFloat(warehouseItem.Stock_Kg);
         const avgHPP = warehouseItem.Avg_HPP;
@@ -161,7 +159,7 @@ export async function createRoastingBatch(prevState: ActionState, formData: Form
         warehouseItem.Total_Value = newTotalValue;
         warehouseItem.Last_Update = batchData.Tanggal;
 
-        // 4. Update/create roasted inventory
+        // 3. Update/create roasted inventory
         const roastedProductName = `${batchData.Green_Beans} - ${batchData.Profile}`;
         const roastedInvItemIndex = updatedDb.roastedInventory.findIndex(item => item.Produk_Roasting === roastedProductName);
         
@@ -184,7 +182,7 @@ export async function createRoastingBatch(prevState: ActionState, formData: Form
                 Produk_Roasting: roastedProductName,
                 Stock_Kg: batchData.Output_Kg,
                 HPP_Per_Kg: batchData.HPP_Per_Kg,
-                Harga_Jual_Kg: 0, // Default sell price to 0
+                Harga_Jual_Kg: 0,
                 Total_Value: batchData.HPP_Per_Kg * batchData.Output_Kg,
             });
         }
@@ -515,10 +513,12 @@ export async function resetAllData(prevState: ActionState, formData: FormData): 
 export async function createBlend(prevState: ActionState, formData: FormData): Promise<ActionState> {
     try {
         const db: GlobalData = JSON.parse(formData.get('currentData') as string);
+        const components: Omit<BlendComponent, 'name'>[] = JSON.parse(formData.get('components') as string);
+
         const blendData = {
             name: formData.get('blendName') as string,
             totalQty: safeParseFloat(formData.get('totalQty')),
-            components: JSON.parse(formData.get('components') as string) as BlendComponent[],
+            components,
         };
 
         if (!blendData.name || blendData.totalQty <= 0 || blendData.components.length === 0) {
@@ -542,10 +542,16 @@ export async function createBlend(prevState: ActionState, formData: FormData): P
         for (const component of blendData.components) {
             const componentQtyNeeded = blendData.totalQty * (component.percentage / 100);
             const roastedIndex = updatedDb.roastedInventory.findIndex(r => r.id === component.id);
-            if (roastedIndex === -1) throw new Error(`Komponen ${component.name} tidak ditemukan di inventaris roasted.`);
+            
+            if (roastedIndex === -1) {
+                const componentName = db.roastedInventory.find(r => r.id === component.id)?.Produk_Roasting || 'Unknown';
+                throw new Error(`Komponen ${componentName} tidak ditemukan di inventaris roasted.`);
+            }
 
             const roastedItem = updatedDb.roastedInventory[roastedIndex];
-            if (roastedItem.Stock_Kg < componentQtyNeeded) throw new Error(`Stok ${roastedItem.Produk_Roasting} tidak mencukupi. Butuh ${componentQtyNeeded.toFixed(2)} kg, tersedia ${roastedItem.Stock_Kg.toFixed(2)} kg.`);
+            if (roastedItem.Stock_Kg < componentQtyNeeded) {
+                throw new Error(`Stok ${roastedItem.Produk_Roasting} tidak mencukupi. Butuh ${componentQtyNeeded.toFixed(2)} kg, tersedia ${roastedItem.Stock_Kg.toFixed(2)} kg.`);
+            }
             
             // Deduct stock
             roastedItem.Stock_Kg -= componentQtyNeeded;

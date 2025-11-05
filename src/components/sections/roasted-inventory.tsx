@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useMemo, useTransition } from 'react';
 import {
@@ -27,6 +28,7 @@ import { useToast } from '@/hooks/use-toast';
 import { SubmitButton } from '../submit-button';
 import { BlendForm } from './blend-form';
 import { transferToStore } from '@/lib/actions';
+import { Badge } from '../ui/badge';
 
 interface RoastedInventoryProps {
   data: GlobalData;

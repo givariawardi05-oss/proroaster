@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useActionState, useEffect, useTransition, useMemo } from "react";
@@ -17,7 +18,6 @@ import { SubmitButton } from "@/components/submit-button";
 
 const blendComponentSchema = z.object({
   id: z.string().min(1, "Komponen wajib dipilih"),
-  name: z.string(),
   percentage: z.coerce.number().min(1, "Persentase harus lebih dari 0").max(100),
 });
 
@@ -82,13 +82,9 @@ export function BlendForm({ onFormSubmit, currentData }: BlendFormProps) {
   const onFormSubmitWithData = (data: BlendFormValues) => {
     startTransition(() => {
       const formData = new FormData();
-      const finalComponents = data.components.map(c => {
-        const comp = availableComponents.find(ac => ac.id === c.id);
-        return { ...c, name: comp?.Produk_Roasting || 'Unknown' };
-      });
       formData.append('blendName', data.blendName);
       formData.append('totalQty', String(data.totalQty));
-      formData.append('components', JSON.stringify(finalComponents));
+      formData.append('components', JSON.stringify(data.components));
       formData.append('currentData', JSON.stringify(currentData));
       formAction(formData);
     });
@@ -152,7 +148,7 @@ export function BlendForm({ onFormSubmit, currentData }: BlendFormProps) {
           </div>
         ))}
 
-        <Button type="button" variant="outline" size="sm" onClick={() => append({ id: "", name: "", percentage: 0 })}>
+        <Button type="button" variant="outline" size="sm" onClick={() => append({ id: "", percentage: 0 })}>
           <PlusCircle className="mr-2 h-4 w-4" /> Tambah Komponen
         </Button>
         {errors.components?.root && <p className="text-destructive text-sm mt-1">{errors.components.root.message}</p>}

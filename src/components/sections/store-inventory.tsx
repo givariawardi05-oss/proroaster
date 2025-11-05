@@ -27,7 +27,7 @@ import { ManualStockForm } from './manual-stock-form';
 
 interface StoreInventoryProps {
   data: GlobalData;
-  onDataChange: (data: GlobalData) => void;
+  onDataChange: (data: GlobalData | Omit<GlobalData, 'nextIds' | 'currentBalance'>) => void;
 }
 
 type FilterType = 'all' | 'low' | 'available';
@@ -38,15 +38,15 @@ export function StoreInventory({ data, onDataChange }: StoreInventoryProps) {
   const lowStockLimit = data.settings.stock_low_limit || 10;
 
   const stats = useMemo(() => {
-    const totalStock = data.storeInventory.reduce((sum, item) => sum + (item.Stock_Kg || 0), 0);
-    const totalValue = data.storeInventory.reduce((sum, item) => sum + (item.Total_Value || 0), 0);
-    const readyToSell = data.storeInventory.filter(item => (item.Stock_Kg || 0) > 0).length;
-    const lowStockCount = data.storeInventory.filter(item => (item.Stock_Kg || 0) > 0 && (item.Stock_Kg || 0) < lowStockLimit).length;
-    return { totalStock, totalValue, productCount: data.storeInventory.length, readyToSell, lowStockCount };
+    const totalStock = (data.storeInventory || []).reduce((sum, item) => sum + (item.Stock_Kg || 0), 0);
+    const totalValue = (data.storeInventory || []).reduce((sum, item) => sum + (item.Total_Value || 0), 0);
+    const readyToSell = (data.storeInventory || []).filter(item => (item.Stock_Kg || 0) > 0).length;
+    const lowStockCount = (data.storeInventory || []).filter(item => (item.Stock_Kg || 0) > 0 && (item.Stock_Kg || 0) < lowStockLimit).length;
+    return { totalStock, totalValue, productCount: (data.storeInventory || []).length, readyToSell, lowStockCount };
   }, [data.storeInventory, lowStockLimit]);
 
   const filteredData = useMemo(() => {
-    return data.storeInventory.filter(item => {
+    return (data.storeInventory || []).filter(item => {
       const stock = item.Stock_Kg || 0;
       if (filter === 'low') return stock > 0 && stock < lowStockLimit;
       if (filter === 'available') return stock > 0;
@@ -60,7 +60,7 @@ export function StoreInventory({ data, onDataChange }: StoreInventoryProps) {
     return { text: 'Tersedia', variant: 'outline', className: 'border-green-500 bg-green-50 text-green-700' };
   };
   
-  const handleFormSubmit = (newData: GlobalData) => {
+  const handleFormSubmit = (newData: GlobalData | Omit<GlobalData, 'nextIds' | 'currentBalance'>) => {
     onDataChange(newData);
     setIsDialogOpen(false);
   }
@@ -152,5 +152,3 @@ export function StoreInventory({ data, onDataChange }: StoreInventoryProps) {
     </div>
   );
 }
-
-    

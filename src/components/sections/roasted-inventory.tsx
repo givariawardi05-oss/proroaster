@@ -16,11 +16,12 @@ import { formatRupiah } from '@/lib/utils';
 import type { GlobalData, RoastedInventoryItem } from '@/lib/definitions';
 import { Package, DollarSign, Scale, ArrowRight } from 'lucide-react';
 import { transferToStore } from '@/lib/actions';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
+import { SubmitButton } from '../submit-button';
 
 interface RoastedInventoryProps {
   data: GlobalData;
-  onDataChange: (data: GlobalData) => void;
+  onDataChange: (data: GlobalData | Omit<GlobalData, 'nextIds' | 'currentBalance'>) => void;
 }
 
 export function RoastedInventory({ data, onDataChange }: RoastedInventoryProps) {
@@ -28,15 +29,15 @@ export function RoastedInventory({ data, onDataChange }: RoastedInventoryProps) 
   const [isPending, startTransition] = useTransition();
 
   const stats = useMemo(() => {
-    const totalStock = data.roastedInventory.reduce((sum, item) => sum + (item.Stock_Kg || 0), 0);
-    const totalValue = data.roastedInventory.reduce((sum, item) => sum + (item.Total_Value || 0), 0);
+    const totalStock = (data.roastedInventory || []).reduce((sum, item) => sum + (item.Stock_Kg || 0), 0);
+    const totalValue = (data.roastedInventory || []).reduce((sum, item) => sum + (item.Total_Value || 0), 0);
     const avgHpp = totalStock > 0 ? totalValue / totalStock : 0;
-    return { totalStock, totalValue, avgHpp, productCount: data.roastedInventory.length };
+    return { totalStock, totalValue, avgHpp, productCount: (data.roastedInventory || []).length };
   }, [data.roastedInventory]);
 
   const handleSelectAll = (checked: boolean | string) => {
     if (checked) {
-      const allIds = new Set(data.roastedInventory.filter(i => i.Stock_Kg > 0).map(item => item.id));
+      const allIds = new Set((data.roastedInventory || []).filter(i => i.Stock_Kg > 0).map(item => item.id));
       setSelectedItems(allIds);
     } else {
       setSelectedItems(new Set());
@@ -67,7 +68,7 @@ export function RoastedInventory({ data, onDataChange }: RoastedInventoryProps) 
     });
   }
 
-  const itemsWithStock = data.roastedInventory.filter(item => item.Stock_Kg > 0);
+  const itemsWithStock = (data.roastedInventory || []).filter(item => item.Stock_Kg > 0);
   const isAllSelected = itemsWithStock.length > 0 && selectedItems.size === itemsWithStock.length;
 
   return (
@@ -77,10 +78,10 @@ export function RoastedInventory({ data, onDataChange }: RoastedInventoryProps) 
           <h2 className="text-3xl font-bold tracking-tight">Inventory Hasil Roasting</h2>
           <p className="text-muted-foreground">Stok hasil roasting yang siap dipindah ke toko.</p>
         </div>
-        <Button onClick={handleTransfer} disabled={selectedItems.size === 0 || isPending}>
-          {isPending ? 'Mentransfer...' : `Transfer ${selectedItems.size} Item`}
+        <SubmitButton onClick={handleTransfer} disabled={selectedItems.size === 0} pending={isPending} pendingText="Mentransfer...">
+          {`Transfer ${selectedItems.size} Item`}
           <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
+        </SubmitButton>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -143,5 +144,3 @@ export function RoastedInventory({ data, onDataChange }: RoastedInventoryProps) 
     </div>
   );
 }
-
-    

@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useEffect, useTransition } from "react";
+import React, { useActionState, useEffect, useTransition } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useActionState } from "react";
 import { createAsset } from "@/lib/actions";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { getTodayDateString } from "@/lib/utils";
 import type { GlobalData } from "@/lib/definitions";
 
@@ -26,12 +25,13 @@ const assetSchema = z.object({
 type AssetFormValues = z.infer<typeof assetSchema>;
 
 interface AssetFormProps {
-  onFormSubmit: (newData: GlobalData) => void;
+  onFormSubmit: (newData: GlobalData | Omit<GlobalData, 'nextIds' | 'currentBalance'>) => void;
   currentData: GlobalData;
 }
 
 export function AssetForm({ onFormSubmit, currentData }: AssetFormProps) {
   const [state, formAction, isPending] = useActionState(createAsset.bind(null, currentData), null);
+  const { toast } = useToast();
   const [isTransitioning, startTransition] = useTransition();
 
   const {
@@ -58,7 +58,7 @@ export function AssetForm({ onFormSubmit, currentData }: AssetFormProps) {
     } else if (state.status === "error") {
       toast({ title: "Error!", description: state.message, variant: "destructive" });
     }
-  }, [state, onFormSubmit, reset]);
+  }, [state, onFormSubmit, reset, toast]);
   
   const onFormSubmitWithData = (data: AssetFormValues) => {
     startTransition(() => {

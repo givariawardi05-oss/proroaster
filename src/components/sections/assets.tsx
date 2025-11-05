@@ -26,13 +26,13 @@ import { AssetForm } from './asset-form';
 
 interface AssetsProps {
   data: GlobalData;
-  onDataChange: (data: GlobalData) => void;
+  onDataChange: (data: GlobalData | Omit<GlobalData, 'nextIds' | 'currentBalance'>) => void;
 }
 
 export function Assets({ data, onDataChange }: AssetsProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const processedAssets = useMemo(() => data.assetsData.map(asset => {
+  const processedAssets = useMemo(() => (data.assetsData || []).map(asset => {
     const purchaseValue = asset.Nilai_Perolehan || 0;
     const depreciationAnnual = asset.Penyusutan_Tahun || 0;
     if (depreciationAnnual === 0) return { ...asset, bookValue: purchaseValue };
@@ -58,7 +58,7 @@ export function Assets({ data, onDataChange }: AssetsProps) {
     return { totalCurrentAssets, totalFixedAssets, totalAllAssets: totalCurrentAssets + totalFixedAssets };
   }, [processedAssets]);
   
-  const handleFormSubmit = (newData: GlobalData) => {
+  const handleFormSubmit = (newData: GlobalData | Omit<GlobalData, 'nextIds' | 'currentBalance'>) => {
     onDataChange(newData);
     setIsDialogOpen(false);
   }
@@ -133,5 +133,3 @@ export function Assets({ data, onDataChange }: AssetsProps) {
     </div>
   );
 }
-
-    

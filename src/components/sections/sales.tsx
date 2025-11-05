@@ -26,7 +26,7 @@ import { SalesForm } from './sales-form';
 
 interface SalesProps {
   data: GlobalData;
-  onDataChange: (data: GlobalData) => void;
+  onDataChange: (data: GlobalData | Omit<GlobalData, 'nextIds' | 'currentBalance'>) => void;
 }
 
 const statusVariant: { [key: string]: 'destructive' | 'secondary' | 'outline' } = {
@@ -48,9 +48,9 @@ const statusColor: { [key: string]: string } = {
 
 export function Sales({ data, onDataChange }: SalesProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const availableProducts: StoreInventoryItem[] = data.storeInventory.filter(item => item.Stock_Kg > 0);
+  const availableProducts: StoreInventoryItem[] = (data.storeInventory || []).filter(item => item.Stock_Kg > 0);
   
-  const handleFormSubmit = (newData: GlobalData) => {
+  const handleFormSubmit = (newData: GlobalData | Omit<GlobalData, 'nextIds' | 'currentBalance'>) => {
     onDataChange(newData);
     setIsDialogOpen(false);
   }
@@ -136,5 +136,3 @@ export function Sales({ data, onDataChange }: SalesProps) {
     </div>
   );
 }
-
-    

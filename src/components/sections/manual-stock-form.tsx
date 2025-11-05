@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useEffect, useTransition } from "react";
+import React, { useActionState, useEffect, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useActionState } from "react";
 import { addManualStock } from "@/lib/actions";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import type { GlobalData } from "@/lib/definitions";
 
 import { Input } from "@/components/ui/input";
@@ -25,7 +24,7 @@ const manualStockSchema = z.object({
 type ManualStockFormValues = z.infer<typeof manualStockSchema>;
 
 interface ManualStockFormProps {
-  onFormSubmit: (newData: GlobalData) => void;
+  onFormSubmit: (newData: GlobalData | Omit<GlobalData, 'nextIds' | 'currentBalance'>) => void;
   currentData: GlobalData;
 }
 

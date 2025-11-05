@@ -9,7 +9,7 @@ import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { Sheet, SheetContent } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 import { TooltipProvider } from "@/components/ui/tooltip"
 
 const SIDEBAR_WIDTH = "18rem"; // Adjusted width
@@ -113,10 +113,9 @@ SidebarProvider.displayName = "SidebarProvider"
 
 const Sidebar = React.forwardRef<
   HTMLDivElement,
-  React.ComponentProps<typeof SheetContent>
+  Omit<React.ComponentProps<typeof SheetContent>, 'side'>
 >(
   ({
-      side = "left",
       className,
       children,
       ...props
@@ -131,10 +130,14 @@ const Sidebar = React.forwardRef<
             <Sheet open={open} onOpenChange={setOpen}>
                 <SheetContent
                     ref={ref}
-                    side={side}
+                    side="left"
                     className={cn("w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground flex flex-col", className)}
                     {...props}
                 >
+                    <SheetHeader className='p-4'>
+                        <SheetTitle className='sr-only'>Sidebar Menu</SheetTitle>
+                        <SheetDescription className='sr-only'>Navigation links for the application.</SheetDescription>
+                    </SheetHeader>
                     {children}
                 </SheetContent>
             </Sheet>
@@ -145,7 +148,7 @@ const Sidebar = React.forwardRef<
         <div
             ref={ref}
             data-state={open ? 'open' : 'closed'}
-            className={cn("flex-col bg-sidebar text-sidebar-foreground transition-all duration-300 ease-in-out lg:flex",
+            className={cn("flex-col bg-sidebar text-sidebar-foreground transition-all duration-300 ease-in-out hidden lg:flex",
                 open ? 'w-[var(--sidebar-width)]' : 'w-0',
                 className)}
             {...props}

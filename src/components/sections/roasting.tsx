@@ -26,14 +26,14 @@ import { RoastingForm } from './roasting-form';
 
 interface RoastingProps {
   data: GlobalData;
-  onDataChange: (data: GlobalData) => void;
+  onDataChange: (data: GlobalData | Omit<GlobalData, 'nextIds' | 'currentBalance'>) => void;
 }
 
 export function Roasting({ data, onDataChange }: RoastingProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const availableBeans = data.warehouseData.filter(item => item.Stock_Kg > 0);
+  const availableBeans = (data.warehouseData || []).filter(item => item.Stock_Kg > 0);
 
-  const handleFormSubmit = (newData: GlobalData) => {
+  const handleFormSubmit = (newData: GlobalData | Omit<GlobalData, 'nextIds' | 'currentBalance'>) => {
     onDataChange(newData);
     setIsDialogOpen(false);
   }
@@ -121,5 +121,3 @@ export function Roasting({ data, onDataChange }: RoastingProps) {
     </div>
   );
 }
-
-    

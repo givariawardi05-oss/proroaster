@@ -1,18 +1,14 @@
 export type PurchaseItem = {
-    id?: string; // made optional
     name: string;
     qty: number;
     price: number;
-    total?: number; // made optional
 };
 
 export type SalesItem = {
-    id?: string; // made optional
     name: string;
     qty: number;
     price: number;
     discount: number;
-    total?: number; // made optional
 };
 
 export type WarehouseItem = {
@@ -87,7 +83,6 @@ export type Transaction = {
     Kategori: string;
     Debit: number;
     Kredit: number;
-    balance: number;
 };
 
 export type Asset = {
@@ -109,7 +104,8 @@ export type NextIds = {
     salesInvoice: string;
 }
 
-export type GlobalData = {
+// Data that is actually stored in localStorage
+export type StorableGlobalData = {
     warehouseData: WarehouseItem[];
     roastingBatches: RoastingBatch[];
     roastedInventory: RoastedInventoryItem[];
@@ -119,6 +115,10 @@ export type GlobalData = {
     transactions: Transaction[];
     assetsData: Asset[];
     settings: Settings;
+}
+
+// The complete data structure available in the app context, including calculated fields
+export type GlobalData = StorableGlobalData & {
     nextIds: NextIds;
     currentBalance: number;
 };
@@ -137,5 +137,3 @@ export type SectionName =
     | 'balance-sheet'
     | 'settings'
     | 'sync';
-
-    

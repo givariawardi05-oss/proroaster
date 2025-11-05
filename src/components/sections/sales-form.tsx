@@ -1,14 +1,13 @@
 "use client";
 
-import React, { useEffect, useTransition } from "react";
+import React, { useActionState, useEffect, useTransition } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useActionState } from "react";
 import { createSale } from "@/lib/actions";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { formatRupiah, getTodayDateString } from "@/lib/utils";
-import type { GlobalData, StoreInventoryItem, SalesItem } from "@/lib/definitions";
+import type { GlobalData, StoreInventoryItem } from "@/lib/definitions";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -20,7 +19,7 @@ import { SubmitButton } from "@/components/submit-button";
 const salesItemSchema = z.object({
   name: z.string().min(1, "Produk wajib dipilih"),
   qty: z.coerce.number().min(0.01, "Qty harus lebih dari 0"),
-  price: z.coerce.number().min(1, "Harga harus lebih dari 0"),
+  price: z.coerce.number().min(0, "Harga tidak boleh negatif"),
   discount: z.coerce.number().min(0).max(100).default(0),
 });
 
@@ -41,7 +40,7 @@ type SalesFormValues = z.infer<typeof salesSchema>;
 interface SalesFormProps {
   nextInvoiceNumber: string;
   availableProducts: StoreInventoryItem[];
-  onFormSubmit: (newData: GlobalData) => void;
+  onFormSubmit: (newData: GlobalData | Omit<GlobalData, 'nextIds' | 'currentBalance'>) => void;
   currentData: GlobalData;
 }
 
@@ -101,7 +100,16 @@ export function SalesForm({ nextInvoiceNumber, availableProducts, onFormSubmit, 
     if (!state) return;
     if (state.status === "success" && state.data) {
       toast({ title: "Sukses!", description: state.message });
-      reset();
+      reset({
+        invoiceNumber: `INV-${Date.now()}`,
+        date: getTodayDateString(),
+        dueDate: getTodayDateString(),
+        paymentStatus: 'Paid',
+        paymentMethod: 'Cash',
+        shippingCost: 0,
+        items: [{ name: '', qty: 0, price: 0, discount: 0 }],
+        total: 0,
+      });
       onFormSubmit(state.data);
     } else if (state.status === "error") {
       toast({ title: "Error!", description: state.message, variant: "destructive" });

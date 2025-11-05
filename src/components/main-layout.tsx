@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { SidebarProvider, useSidebar } from '@/components/ui/sidebar';
+import { useSidebar } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import type { GlobalData, SectionName } from '@/lib/definitions';
 import { Dashboard } from './sections/dashboard';
@@ -22,6 +22,7 @@ import { Button } from './ui/button';
 import { Bell, Search, Menu } from 'lucide-react';
 import { fetchAllData } from '@/lib/data';
 import { writeAllData } from '@/lib/local-storage-helpers';
+import { SidebarProvider } from './ui/sidebar';
 
 interface MainLayoutProps {
   initialData: GlobalData;
@@ -42,12 +43,12 @@ export default function MainLayout({ initialData }: MainLayoutProps) {
     loadData();
   }, []);
 
-  const handleDataChange = useCallback(async (newData: GlobalData) => {
-    // Omit calculated/volatile fields before writing to localStorage
+  const handleDataChange = useCallback(async (newData: GlobalData | Omit<GlobalData, 'nextIds' | 'currentBalance'>) => {
+    // Only write storable data to localStorage
     const { nextIds, currentBalance, ...dataToWrite } = newData;
     await writeAllData(dataToWrite);
-    
-    // Re-fetch to get fresh calculated values
+
+    // Re-fetch all data which includes recalculating volatile state
     const reloadedData = await fetchAllData();
     setData(reloadedData);
   }, []);
@@ -105,33 +106,31 @@ export default function MainLayout({ initialData }: MainLayoutProps) {
   };
 
   return (
-    <>
-      <AppSidebar activeSection={activeSection} setActiveSection={setActiveSection} />
-      <div className='flex-1 flex flex-col'>
-         <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
-            <Button variant="ghost" size="icon" onClick={() => setOpen(true)} className='lg:hidden'>
-                <Menu className='h-6 w-6' />
-                <span className='sr-only'>Open Sidebar</span>
-            </Button>
-            <div className="flex-1">
-                <h1 className="text-xl font-semibold">{sectionTitles[activeSection]}</h1>
-            </div>
-            <div className='relative w-full max-w-xs'>
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Cari..." className="pl-9 bg-input" />
-            </div>
-            <div className='ml-auto flex items-center gap-2'>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                    <Bell className="h-5 w-5"/>
-                </Button>
-            </div>
-        </header>
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-            {renderSection()}
-        </main>
+      <div className='flex h-screen bg-background'>
+        <AppSidebar activeSection={activeSection} setActiveSection={setActiveSection} />
+        <div className='flex-1 flex flex-col overflow-hidden'>
+           <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
+              <Button variant="ghost" size="icon" onClick={() => setOpen(true)} className='lg:hidden'>
+                  <Menu className='h-6 w-6' />
+                  <span className='sr-only'>Open Sidebar</span>
+              </Button>
+              <div className="flex-1">
+                  <h1 className="text-xl font-semibold">{sectionTitles[activeSection]}</h1>
+              </div>
+              <div className='relative w-full max-w-xs'>
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="Cari..." className="pl-9 bg-input" />
+              </div>
+              <div className='ml-auto flex items-center gap-2'>
+                  <Button variant="ghost" size="icon" className="rounded-full">
+                      <Bell className="h-5 w-5"/>
+                  </Button>
+              </div>
+          </header>
+          <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+              {renderSection()}
+          </main>
+        </div>
       </div>
-    </>
   );
 }
-
-    

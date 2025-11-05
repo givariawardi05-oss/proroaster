@@ -1,14 +1,13 @@
 "use client";
 
-import React, { useEffect, useTransition } from "react";
+import React, { useActionState, useEffect, useTransition } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useActionState } from "react";
 import { createPurchase } from "@/lib/actions";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { formatRupiah, getTodayDateString } from "@/lib/utils";
-import type { GlobalData, PurchaseItem } from "@/lib/definitions";
+import type { GlobalData } from "@/lib/definitions";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -34,7 +33,7 @@ type PurchaseFormValues = z.infer<typeof purchaseSchema>;
 
 interface PurchaseFormProps {
   nextInvoiceNumber: string;
-  onFormSubmit: (newData: GlobalData) => void;
+  onFormSubmit: (newData: GlobalData | Omit<GlobalData, 'nextIds' | 'currentBalance'>) => void;
   currentData: GlobalData;
 }
 
@@ -91,18 +90,16 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit, currentData }: P
         variant: "destructive",
       });
     }
-  }, [state, onFormSubmit, reset]);
+  }, [state, onFormSubmit, reset, nextInvoiceNumber]);
   
   const onFormSubmitWithData = (data: PurchaseFormValues) => {
     startTransition(() => {
         const formData = new FormData();
-        Object.entries(data).forEach(([key, value]) => {
-            if (key === 'items') {
-                formData.append(key, JSON.stringify(value));
-            } else {
-                formData.append(key, String(value));
-            }
-        });
+        formData.append('items', JSON.stringify(data.items));
+        formData.append('total', String(data.total));
+        formData.append('invoiceNumber', data.invoiceNumber);
+        formData.append('date', data.date);
+        formData.append('supplier', data.supplier);
         formAction(formData);
     });
   }

@@ -26,13 +26,13 @@ import { PurchaseForm } from './purchase-form';
 
 interface PurchasesProps {
   data: GlobalData;
-  onDataChange: (data: GlobalData) => void;
+  onDataChange: (data: GlobalData | Omit<GlobalData, 'nextIds' | 'currentBalance'>) => void;
 }
 
 export function Purchases({ data, onDataChange }: PurchasesProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   
-  const handleFormSubmit = (newData: GlobalData) => {
+  const handleFormSubmit = (newData: GlobalData | Omit<GlobalData, 'nextIds' | 'currentBalance'>) => {
       onDataChange(newData);
       setIsDialogOpen(false);
   }
@@ -119,5 +119,3 @@ export function Purchases({ data, onDataChange }: PurchasesProps) {
     </div>
   );
 }
-
-    

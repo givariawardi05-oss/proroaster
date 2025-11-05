@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useActionState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -13,9 +13,8 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { useActionState, useTransition } from 'react';
 import { resetAllData } from '@/lib/actions';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { AlertTriangle, Download, Upload } from 'lucide-react';
 import { getAllData, writeAllData } from '@/lib/local-storage-helpers';
 import type { GlobalData } from '@/lib/definitions';
@@ -23,7 +22,7 @@ import { SubmitButton } from '../submit-button';
 
 interface SyncProps {
   currentData: GlobalData;
-  onDataChange: (data: GlobalData) => void;
+  onDataChange: (data: GlobalData | Omit<GlobalData, 'nextIds' | 'currentBalance'>) => void;
 }
 
 export function Sync({ currentData, onDataChange }: SyncProps) {
@@ -73,12 +72,11 @@ export function Sync({ currentData, onDataChange }: SyncProps) {
         try {
             const text = e.target?.result;
             if (typeof text !== 'string') throw new Error("File is not a valid text file.");
-            const data = JSON.parse(text);
+            const importedData = JSON.parse(text);
             // Basic validation
-            if (data.settings && Array.isArray(data.transactions)) {
-                await writeAllData(data); // Write the imported data to localStorage
-                const freshData = await getAllData(); // Force reload from localStorage
-                onDataChange(freshData as GlobalData); // Update the main state
+            if (importedData.settings && Array.isArray(importedData.transactions)) {
+                await writeAllData(importedData); // Write the imported data to localStorage
+                onDataChange(importedData); // Update the main state
                 toast({ title: "Impor Berhasil", description: "Data berhasil dipulihkan." });
             } else {
                 throw new Error("Invalid data structure in JSON file.");

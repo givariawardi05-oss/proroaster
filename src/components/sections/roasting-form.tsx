@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useEffect, useMemo, useTransition } from "react";
+import React, { useActionState, useEffect, useMemo, useTransition } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useActionState } from "react";
 import { createRoastingBatch } from "@/lib/actions";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { formatRupiah, getTodayDateString } from "@/lib/utils";
 import type { GlobalData, WarehouseItem } from "@/lib/definitions";
 
@@ -34,7 +33,7 @@ type RoastingFormValues = z.infer<typeof roastingSchema>;
 interface RoastingFormProps {
   nextBatchId: string;
   availableBeans: WarehouseItem[];
-  onFormSubmit: (newData: GlobalData) => void;
+  onFormSubmit: (newData: GlobalData | Omit<GlobalData, 'nextIds' | 'currentBalance'>) => void;
   currentData: GlobalData;
 }
 
@@ -79,7 +78,7 @@ export function RoastingForm({ nextBatchId, availableBeans, onFormSubmit, curren
     const hppPerKg = output > 0 ? totalCost / output : 0;
     
     const sellPrice = watchedValues.sellPrice || 0;
-    const margin = sellPrice > 0 ? ((sellPrice - hppPerKg) / sellPrice) * 100 : 0;
+    const margin = sellPrice > 0 && hppPerKg > 0 ? ((sellPrice - hppPerKg) / sellPrice) * 100 : 0;
     
     return { gbHpp, output, totalCost, hppPerKg, margin };
   }, [watchedValues, availableBeans]);
@@ -92,7 +91,15 @@ export function RoastingForm({ nextBatchId, availableBeans, onFormSubmit, curren
     if (!state) return;
     if (state.status === "success" && state.data) {
       toast({ title: "Sukses!", description: state.message });
-      reset();
+      reset({
+        batchId: `RB-${Date.now()}`,
+        date: getTodayDateString(),
+        yieldPercent: 85,
+        gasCost: 50000,
+        laborCost: 100000,
+        otherCost: 25000,
+        hppPerKg: 0,
+      });
       onFormSubmit(state.data);
     } else if (state.status === "error") {
       toast({

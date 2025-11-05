@@ -93,7 +93,7 @@ export default function MainLayout({ initialData }: MainLayoutProps) {
       case 'transactions':
         return <Transactions data={data} />;
       case 'reports':
-        return <Reports />;
+        return <Reports data={data} />;
       case 'assets':
         return <Assets data={data} onDataChange={handleDataChange} />;
       case 'balance-sheet':
@@ -132,7 +132,7 @@ export default function MainLayout({ initialData }: MainLayoutProps) {
               </div>
           </header>
           <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-              <div className="mx-auto w-full">
+              <div className="mx-auto w-full max-w-screen-2xl">
                 {renderSection()}
               </div>
           </main>

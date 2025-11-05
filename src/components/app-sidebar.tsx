@@ -29,6 +29,7 @@ import {
     Coffee
 } from 'lucide-react';
 import type { SectionName } from '@/lib/definitions';
+import { cn } from '@/lib/utils';
 
 interface AppSidebarProps {
   activeSection: SectionName;
@@ -63,7 +64,7 @@ export function AppSidebar({ activeSection, setActiveSection }: AppSidebarProps)
     <Sidebar>
       <SidebarHeader>
         <div className="flex items-center gap-3">
-            <div className="flex size-11 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-orange-400 dark:from-primary dark:to-orange-600">
+            <div className="flex size-11 items-center justify-center rounded-lg bg-primary">
                 <Coffee className="size-6 text-primary-foreground" />
             </div>
             <div>

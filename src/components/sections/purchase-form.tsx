@@ -92,18 +92,20 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit, currentData }: P
     }
   }, [state, onFormSubmit, reset]);
   
+  const onFormSubmitWithData = (data: PurchaseFormValues) => {
+    const formData = new FormData();
+    Object.entries(data).forEach(([key, value]) => {
+        if (key === 'items') {
+            formData.append(key, JSON.stringify(value));
+        } else {
+            formData.append(key, String(value));
+        }
+    });
+    formAction(formData);
+  }
+
   return (
-    <form action={formAction} onSubmit={handleSubmit((data) => {
-        const formData = new FormData();
-        Object.entries(data).forEach(([key, value]) => {
-            if (key === 'items') {
-                formData.append(key, JSON.stringify(value));
-            } else {
-                formData.append(key, String(value));
-            }
-        });
-        formAction(formData);
-    })} className="space-y-4">
+    <form action={formAction} onSubmit={handleSubmit(onFormSubmitWithData)} className="space-y-4">
       <input type="hidden" {...register('total')} />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
@@ -174,10 +176,8 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit, currentData }: P
       </div>
       
       <div className="flex justify-end gap-2 pt-4">
-         <SubmitButton pending={isPending} pendingText="Menyimpan...">Simpan & Masuk Warehouse</SubmitButton>
+         <SubmitButton pending={isPending} pendingText="Menyimpan...">Simpan &amp; Masuk Warehouse</SubmitButton>
       </div>
     </form>
   );
 }
-
-    

@@ -60,7 +60,7 @@ export function AssetForm({ onFormSubmit, currentData }: AssetFormProps) {
   }, [state, onFormSubmit, reset]);
   
   return (
-    <form action={formAction} onSubmit={handleSubmit(() => formAction(new FormData(document.querySelector('form')!)))} className="space-y-4">
+    <form action={formAction} onSubmit={handleSubmit((data) => formAction(new FormData(document.querySelector('form')!)))} className="space-y-4">
         <div>
           <Label htmlFor="name">Nama Aset</Label>
           <Input id="name" {...register("name")} />
@@ -111,5 +111,3 @@ export function AssetForm({ onFormSubmit, currentData }: AssetFormProps) {
     </form>
   );
 }
-
-    

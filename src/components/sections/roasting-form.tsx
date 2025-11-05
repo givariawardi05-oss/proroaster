@@ -189,5 +189,3 @@ export function RoastingForm({ nextBatchId, availableBeans, onFormSubmit, curren
     </form>
   );
 }
-
-    

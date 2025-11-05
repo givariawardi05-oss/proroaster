@@ -105,5 +105,3 @@ export function ManualStockForm({ onFormSubmit, currentData }: ManualStockFormPr
     </form>
   );
 }
-
-    

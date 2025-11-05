@@ -193,5 +193,3 @@ export function SalesForm({ nextInvoiceNumber, availableProducts, onFormSubmit, 
     </form>
   );
 }
-
-    

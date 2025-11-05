@@ -64,7 +64,7 @@ export function Settings({ data, onDataChange }: SettingsProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Informasi & Konfigurasi Sistem</CardTitle>
+          <CardTitle>Informasi &amp; Konfigurasi Sistem</CardTitle>
           <CardDescription>Perubahan pada pengaturan akan mempengaruhi kalkulasi di seluruh sistem.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -99,5 +99,3 @@ export function Settings({ data, onDataChange }: SettingsProps) {
     </div>
   );
 }
-
-    

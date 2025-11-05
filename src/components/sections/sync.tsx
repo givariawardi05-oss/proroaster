@@ -19,6 +19,7 @@ import { toast } from '@/hooks/use-toast';
 import { AlertTriangle, Download, Upload } from 'lucide-react';
 import { getAllData, writeAllData } from '@/lib/local-storage-helpers';
 import type { GlobalData } from '@/lib/definitions';
+import { SubmitButton } from '../submit-button';
 
 interface SyncProps {
   currentData: GlobalData;
@@ -76,7 +77,7 @@ export function Sync({ currentData, onDataChange }: SyncProps) {
             // Basic validation
             if (data.settings && Array.isArray(data.transactions)) {
                 await writeAllData(data); // Write the imported data to localStorage
-                const freshData = await getAllData(true); // Force reload from localStorage
+                const freshData = await getAllData(); // Force reload from localStorage
                 onDataChange(freshData as GlobalData); // Update the main state
                 toast({ title: "Impor Berhasil", description: "Data berhasil dipulihkan." });
             } else {
@@ -94,7 +95,7 @@ export function Sync({ currentData, onDataChange }: SyncProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Impor, Ekspor & Reset</h2>
+        <h2 className="text-3xl font-bold tracking-tight">Impor, Ekspor &amp; Reset</h2>
         <p className="text-muted-foreground">Pengelolaan Data Lokal.</p>
       </div>
 
@@ -139,9 +140,11 @@ export function Sync({ currentData, onDataChange }: SyncProps) {
               <AlertDialogFooter>
                 <AlertDialogCancel>Batal</AlertDialogCancel>
                 <form action={formAction}>
-                    <SubmitButton variant="destructive" pending={isPending} pendingText="Mereset...">
-                        Ya, Hapus Semua Data
-                    </SubmitButton>
+                    <AlertDialogAction asChild>
+                        <SubmitButton variant="destructive" pending={isPending} pendingText="Mereset...">
+                            Ya, Hapus Semua Data
+                        </SubmitButton>
+                    </AlertDialogAction>
                 </form>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -151,5 +154,3 @@ export function Sync({ currentData, onDataChange }: SyncProps) {
     </div>
   );
 }
-
-    

@@ -4,7 +4,7 @@ import React, { useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { createAsset } from "@/lib/actions";
 import { toast } from "@/hooks/use-toast";
 import { getTodayDateString } from "@/lib/utils";
@@ -29,7 +29,7 @@ interface AssetFormProps {
 }
 
 export function AssetForm({ onFormSubmit }: AssetFormProps) {
-  const [state, formAction] = useFormState(createAsset, null);
+  const [state, formAction] = useActionState(createAsset, null);
 
   const {
     register,

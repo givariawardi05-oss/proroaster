@@ -4,7 +4,7 @@ import React, { useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { createPurchase } from "@/lib/actions";
 import { toast } from "@/hooks/use-toast";
 import { formatRupiah, getTodayDateString } from "@/lib/utils";
@@ -37,7 +37,7 @@ interface PurchaseFormProps {
 }
 
 export function PurchaseForm({ nextInvoiceNumber, onFormSubmit }: PurchaseFormProps) {
-  const [state, formAction] = useFormState(createPurchase, null);
+  const [state, formAction] = useActionState(createPurchase, null);
 
   const {
     register,

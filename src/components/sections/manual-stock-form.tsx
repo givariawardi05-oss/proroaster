@@ -4,7 +4,7 @@ import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { addManualStock } from "@/lib/actions";
 import { toast } from "@/hooks/use-toast";
 
@@ -28,7 +28,7 @@ interface ManualStockFormProps {
 }
 
 export function ManualStockForm({ onFormSubmit }: ManualStockFormProps) {
-  const [state, formAction] = useFormState(addManualStock, null);
+  const [state, formAction] = useActionState(addManualStock, null);
 
   const {
     register,

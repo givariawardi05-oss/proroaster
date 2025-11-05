@@ -4,7 +4,7 @@ import React, { useEffect, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { createRoastingBatch } from "@/lib/actions";
 import { toast } from "@/hooks/use-toast";
 import { formatRupiah, getTodayDateString } from "@/lib/utils";
@@ -39,7 +39,7 @@ interface RoastingFormProps {
 }
 
 export function RoastingForm({ nextBatchId, availableBeans, onFormSubmit }: RoastingFormProps) {
-  const [state, formAction] = useFormState(createRoastingBatch, null);
+  const [state, formAction] = useActionState(createRoastingBatch, null);
 
   const {
     register,

@@ -65,7 +65,7 @@ export function BlendForm({ onFormSubmit, currentData }: BlendFormProps) {
   });
   
   const watchedComponents = watch("components");
-  const totalPercentage = watchedComponents.reduce((sum, item) => sum + (item.percentage || 0), 0);
+  const totalPercentage = watchedComponents.reduce((sum, item) => sum + (Number(item.percentage) || 0), 0);
 
 
   useEffect(() => {
@@ -148,7 +148,7 @@ export function BlendForm({ onFormSubmit, currentData }: BlendFormProps) {
           </div>
         ))}
 
-        <Button type="button" variant="outline" size="sm" onClick={() => append({ id: "", percentage: 0 })}>
+        <Button type="button" variant="outline" size="sm" onClick={() => append({ id: "", percentage: null as any })}>
           <PlusCircle className="mr-2 h-4 w-4" /> Tambah Komponen
         </Button>
         {errors.components?.root && <p className="text-destructive text-sm mt-1">{errors.components.root.message}</p>}

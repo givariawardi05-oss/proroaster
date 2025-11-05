@@ -37,8 +37,7 @@ interface PurchaseFormProps {
 }
 
 export function PurchaseForm({ nextInvoiceNumber, onFormSubmit }: PurchaseFormProps) {
-  const [state, formAction] = useActionState(createPurchase, null);
-  const [isPending, startTransition] = useTransition();
+  const [state, formAction, isPending] = useActionState(createPurchase, null);
 
   const {
     register,
@@ -72,7 +71,12 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit }: PurchaseFormPr
   useEffect(() => {
     if (state?.status === "success") {
       toast({ title: "Sukses!", description: state.message });
-      reset();
+      reset({
+        invoiceNumber: `FP-${Date.now()}`,
+        date: getTodayDateString(),
+        supplier: '',
+        items: [{ name: "", qty: 0, price: 0 }],
+      });
       onFormSubmit();
     } else if (state?.status === "error") {
       toast({
@@ -82,21 +86,9 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit }: PurchaseFormPr
       });
     }
   }, [state, onFormSubmit, reset]);
-
-  const onSubmit = (data: PurchaseFormValues) => {
-    const formData = new FormData();
-    formData.append('supplier', data.supplier);
-    formData.append('date', data.date);
-    formData.append('invoiceNumber', data.invoiceNumber);
-    formData.append('total', data.total.toString());
-    formData.append('items', JSON.stringify(data.items));
-    startTransition(() => {
-      formAction(formData);
-    });
-  };
   
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form action={formAction} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <Label htmlFor="supplier">Supplier</Label>
@@ -114,9 +106,11 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit }: PurchaseFormPr
         </div>
       </div>
 
-      <div className="border rounded-lg p-4 space-y-3">
+      <div className="border rounded-lg p-4 space-y-3 bg-muted/20">
         <h4 className="font-semibold">Item Pembelian</h4>
         <input type="hidden" {...register('total')} />
+        <input type="hidden" name="items" value={JSON.stringify(watchedItems)} />
+
         {fields.map((field, index) => (
           <div key={field.id} className="grid grid-cols-12 gap-2 items-start">
             <div className="col-span-4">
@@ -136,7 +130,7 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit }: PurchaseFormPr
             </div>
             <div className="col-span-3">
                 <Label className="sr-only">Total</Label>
-                <Input value={formatRupiah((watchedItems[index]?.qty || 0) * (watchedItems[index]?.price || 0))} readOnly className="font-mono"/>
+                <Input value={formatRupiah((watchedItems[index]?.qty || 0) * (watchedItems[index]?.price || 0))} readOnly className="font-mono bg-background"/>
             </div>
             <div className="col-span-1">
               <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
@@ -165,8 +159,8 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit }: PurchaseFormPr
         </div>
       </div>
       
-      <div className="flex justify-end gap-2">
-        <SubmitButton pending={isPending} pendingText="Menyimpan...">Simpan & Masuk Warehouse</SubmitButton>
+      <div className="flex justify-end gap-2 pt-4">
+         <SubmitButton pending={isPending} pendingText="Menyimpan...">Simpan & Masuk Warehouse</SubmitButton>
       </div>
     </form>
   );

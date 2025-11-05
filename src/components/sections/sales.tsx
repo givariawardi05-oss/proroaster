@@ -6,6 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -28,20 +29,20 @@ interface SalesProps {
   data: GlobalData;
 }
 
-const statusVariant: { [key: string]: 'destructive' | 'secondary' | 'default' } = {
+const statusVariant: { [key: string]: 'destructive' | 'secondary' | 'outline' } = {
     'Draft': 'secondary',
-    'Sent': 'default',
-    'Paid': 'default',
-    'Lunas': 'default',
+    'Sent': 'outline',
+    'Paid': 'outline',
+    'Lunas': 'outline',
     'Overdue': 'destructive'
 };
 
 const statusColor: { [key: string]: string } = {
-    'Paid': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-    'Lunas': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-    'Sent': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-    'Overdue': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-    'Draft': 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
+    'Paid': 'border-green-500 bg-green-50 text-green-700',
+    'Lunas': 'border-green-500 bg-green-50 text-green-700',
+    'Sent': 'border-blue-500 bg-blue-50 text-blue-700',
+    'Overdue': 'border-red-500 bg-red-50 text-red-700',
+    'Draft': 'border-gray-400 bg-gray-50 text-gray-600',
 }
 
 
@@ -51,7 +52,11 @@ export function Sales({ data }: SalesProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end items-start">
+      <header className="flex justify-between items-start">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Invoice Penjualan</h2>
+          <p className="text-muted-foreground">Buat dan kelola invoice untuk pelanggan.</p>
+        </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -62,6 +67,9 @@ export function Sales({ data }: SalesProps) {
           <DialogContent className="max-w-4xl">
             <DialogHeader>
               <DialogTitle>Invoice Penjualan Baru</DialogTitle>
+              <DialogDescription>
+                Pilih produk dari inventaris toko. Stok akan otomatis terpotong saat invoice disimpan.
+              </DialogDescription>
             </DialogHeader>
             <SalesForm
               nextInvoiceNumber={data.nextIds.salesInvoice}
@@ -70,7 +78,7 @@ export function Sales({ data }: SalesProps) {
             />
           </DialogContent>
         </Dialog>
-      </div>
+      </header>
 
       <Card>
         <CardHeader>

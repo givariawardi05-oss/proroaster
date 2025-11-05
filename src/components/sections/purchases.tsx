@@ -6,6 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,7 +33,11 @@ export function Purchases({ data }: PurchasesProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end items-start">
+      <header className="flex justify-between items-start">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Faktur Pembelanjaan</h2>
+          <p className="text-muted-foreground">Catat semua pembelian green beans dari supplier.</p>
+        </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -43,6 +48,9 @@ export function Purchases({ data }: PurchasesProps) {
           <DialogContent className="max-w-4xl">
             <DialogHeader>
               <DialogTitle>Faktur Pembelanjaan Baru</DialogTitle>
+              <DialogDescription>
+                Isi detail pembelian di bawah ini. Stok akan otomatis masuk ke Gudang Green Beans.
+              </DialogDescription>
             </DialogHeader>
             <PurchaseForm
               nextInvoiceNumber={data.nextIds.purchaseInvoice}
@@ -50,8 +58,8 @@ export function Purchases({ data }: PurchasesProps) {
             />
           </DialogContent>
         </Dialog>
-      </div>
-
+      </header>
+      
       <Card>
         <CardHeader>
           <CardTitle>Daftar Faktur Pembelian</CardTitle>
@@ -78,7 +86,7 @@ export function Purchases({ data }: PurchasesProps) {
                     <TableCell>{new Date(inv.Tanggal).toLocaleDateString('id-ID')}</TableCell>
                     <TableCell className="text-right">{formatRupiah(inv.Total_Faktur)}</TableCell>
                     <TableCell className="text-center">
-                      <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                      <Badge variant="outline" className="border-green-500 bg-green-50 text-green-700">
                         {inv.Status}
                       </Badge>
                     </TableCell>

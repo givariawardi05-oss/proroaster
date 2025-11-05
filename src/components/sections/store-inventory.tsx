@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { StatCard } from '@/components/stat-card';
 import { formatRupiah } from '@/lib/utils';
@@ -52,18 +53,18 @@ export function StoreInventory({ data }: StoreInventoryProps) {
     }).sort((a, b) => b.Stock_Kg - a.Stock_Kg);
   }, [data.storeInventory, filter, lowStockLimit]);
   
-  const getStatus = (stock: number): { text: string; variant: 'destructive' | 'warning' | 'secondary' | 'default' | 'outline' } => {
-    if (stock === 0) return { text: 'Habis', variant: 'secondary' };
-    if (stock < lowStockLimit) return { text: 'Stok Rendah', variant: 'destructive' };
-    return { text: 'Tersedia', variant: 'default' };
+  const getStatus = (stock: number): { text: string; variant: 'destructive' | 'outline' | 'secondary', className: string } => {
+    if (stock === 0) return { text: 'Habis', variant: 'secondary', className: 'border-gray-400 bg-gray-50 text-gray-600' };
+    if (stock < lowStockLimit) return { text: 'Stok Rendah', variant: 'destructive', className: 'border-red-500 bg-red-50 text-red-700' };
+    return { text: 'Tersedia', variant: 'outline', className: 'border-green-500 bg-green-50 text-green-700' };
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-start">
+      <header className="flex justify-between items-start">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Inventory Store</h2>
-          <p className="text-muted-foreground">Stok siap jual di toko.</p>
+          <h2 className="text-2xl font-bold tracking-tight">Inventaris Toko</h2>
+          <p className="text-muted-foreground">Stok siap jual di toko, termasuk merchandise.</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -75,26 +76,29 @@ export function StoreInventory({ data }: StoreInventoryProps) {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Tambah/Update Produk Manual</DialogTitle>
+              <DialogDescription>
+                Gunakan ini untuk menambahkan item non-roasting seperti merchandise atau untuk menyesuaikan stok.
+              </DialogDescription>
             </DialogHeader>
             <ManualStockForm onFormSubmit={() => setIsDialogOpen(false)} />
           </DialogContent>
         </Dialog>
-      </div>
+      </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Total Store Stock" value={`${stats.totalStock.toFixed(2)} kg`} icon={<Package />} description={`${stats.productCount} produk`} />
-        <StatCard title="Total Value (HPP)" value={formatRupiah(stats.totalValue)} icon={<DollarSign />} description="Nilai inventory" />
+        <StatCard title="Total Value (HPP)" value={formatRupiah(stats.totalValue)} icon={<DollarSign />} description="Nilai inventaris" />
         <StatCard title="Ready to Sell" value={stats.readyToSell.toString()} icon={<CheckCircle />} description="Produk dengan stok > 0" />
-        <StatCard title="Low Stock Alert" value={stats.lowStockCount.toString()} icon={<AlertTriangle />} description="Item di bawah batas" colorClass="text-destructive" />
+        <StatCard title="Low Stock Alert" value={stats.lowStockCount.toString()} icon={<AlertTriangle />} description={`Stok < ${lowStockLimit} kg`} colorClass="text-destructive" />
       </div>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Stok Toko</CardTitle>
+          <CardTitle>Daftar Produk Toko</CardTitle>
           <div className="flex space-x-2">
-            <Button variant={filter === 'all' ? 'default' : 'outline'} size="sm" onClick={() => setFilter('all')}>Semua</Button>
-            <Button variant={filter === 'available' ? 'default' : 'outline'} size="sm" onClick={() => setFilter('available')}>Tersedia</Button>
-            <Button variant={filter === 'low' ? 'default' : 'outline'} size="sm" onClick={() => setFilter('low')}>Stok Rendah</Button>
+            <Button variant={filter === 'all' ? 'secondary' : 'ghost'} size="sm" onClick={() => setFilter('all')}>Semua</Button>
+            <Button variant={filter === 'available' ? 'secondary' : 'ghost'} size="sm" onClick={() => setFilter('available')}>Tersedia</Button>
+            <Button variant={filter === 'low' ? 'secondary' : 'ghost'} size="sm" onClick={() => setFilter('low')}>Stok Rendah</Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -103,11 +107,11 @@ export function StoreInventory({ data }: StoreInventoryProps) {
               <TableRow>
                 <TableHead>Produk</TableHead>
                 <TableHead>Kategori</TableHead>
-                <TableHead>Stok (kg)</TableHead>
-                <TableHead>HPP/kg</TableHead>
-                <TableHead>Harga Jual/kg</TableHead>
-                <TableHead>Total Value</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Stok (kg)</TableHead>
+                <TableHead className="text-right">HPP/kg</TableHead>
+                <TableHead className="text-right">Harga Jual/kg</TableHead>
+                <TableHead className="text-right">Total Value</TableHead>
+                <TableHead className="text-center">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -118,12 +122,12 @@ export function StoreInventory({ data }: StoreInventoryProps) {
                     <TableRow key={item.id}>
                         <TableCell className="font-medium">{item.Nama_Produk}</TableCell>
                         <TableCell>{item.Kategori}</TableCell>
-                        <TableCell>{item.Stock_Kg.toFixed(2)}</TableCell>
-                        <TableCell>{formatRupiah(item.HPP_Per_Kg)}</TableCell>
-                        <TableCell>{formatRupiah(item.Harga_Jual_Kg)}</TableCell>
-                        <TableCell>{formatRupiah(item.Total_Value)}</TableCell>
-                        <TableCell>
-                            <Badge variant={status.variant}>{status.text}</Badge>
+                        <TableCell className="text-right">{item.Stock_Kg.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">{formatRupiah(item.HPP_Per_Kg)}</TableCell>
+                        <TableCell className="text-right font-semibold">{formatRupiah(item.Harga_Jual_Kg)}</TableCell>
+                        <TableCell className="text-right">{formatRupiah(item.Total_Value)}</TableCell>
+                        <TableCell className="text-center">
+                            <Badge variant={status.variant} className={status.className}>{status.text}</Badge>
                         </TableCell>
                     </TableRow>
                    )

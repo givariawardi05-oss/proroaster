@@ -6,6 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -33,7 +34,11 @@ export function Roasting({ data }: RoastingProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end items-start">
+      <header className="flex justify-between items-start">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Manajemen Roasting</h2>
+          <p className="text-muted-foreground">Proses green beans menjadi roasted beans siap jual.</p>
+        </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -44,6 +49,9 @@ export function Roasting({ data }: RoastingProps) {
           <DialogContent className="max-w-4xl">
             <DialogHeader>
               <DialogTitle>Batch Roasting Baru</DialogTitle>
+              <DialogDescription>
+                Pilih green beans, tentukan profil, dan proses batch baru. Hasil roasting akan masuk ke inventaris.
+              </DialogDescription>
             </DialogHeader>
             <RoastingForm
               nextBatchId={data.nextIds.roastingBatch}
@@ -52,7 +60,7 @@ export function Roasting({ data }: RoastingProps) {
             />
           </DialogContent>
         </Dialog>
-      </div>
+      </header>
 
       <Card>
         <CardHeader>
@@ -86,7 +94,7 @@ export function Roasting({ data }: RoastingProps) {
                   <TableCell className="text-right">{formatRupiah(batch.HPP_Per_Kg)}</TableCell>
                   <TableCell className="text-right">{formatRupiah(batch.Harga_Jual_Kg)}</TableCell>
                   <TableCell className="text-center">
-                    <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                    <Badge variant="outline" className="border-green-500 bg-green-50 text-green-700">
                       {batch.Status}
                     </Badge>
                   </TableCell>

@@ -6,6 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -58,9 +59,9 @@ export function Assets({ data }: AssetsProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-start">
+      <header className="flex justify-between items-start">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Data Aset</h2>
+          <h2 className="text-2xl font-bold tracking-tight">Data Aset</h2>
           <p className="text-muted-foreground">Kelola semua aset perusahaan dan hitung penyusutan.</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -73,16 +74,17 @@ export function Assets({ data }: AssetsProps) {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Tambah Aset Baru</DialogTitle>
+              <DialogDescription>Isi formulir di bawah ini untuk menambahkan aset baru ke dalam sistem.</DialogDescription>
             </DialogHeader>
             <AssetForm onFormSubmit={() => setIsDialogOpen(false)} />
           </DialogContent>
         </Dialog>
-      </div>
+      </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard title="Total Aset Lancar" value={formatRupiah(stats.totalCurrentAssets)} icon={<DollarSign />} colorClass="text-green-500" />
         <StatCard title="Total Aset Tetap (Nilai Buku)" value={formatRupiah(stats.totalFixedAssets)} icon={<Building />} colorClass="text-orange-500" />
-        <StatCard title="Total Semua Aset" value={formatRupiah(stats.totalAllAssets)} icon={<DollarSign />} colorClass="text-primary" />
+        <StatCard title="Total Semua Aset" value={formatRupiah(stats.totalAllAssets)} icon={<DollarSign />} colorClass="text-blue-500" />
       </div>
 
       <Card>
@@ -108,9 +110,9 @@ export function Assets({ data }: AssetsProps) {
                         <TableCell className="font-medium">{asset.Nama_Aset}</TableCell>
                         <TableCell>{asset.Kategori}</TableCell>
                         <TableCell>{new Date(asset.Tgl_Perolehan).toLocaleDateString('id-ID')}</TableCell>
-                        <TableCell>{formatRupiah(asset.Nilai_Perolehan)}</TableCell>
-                        <TableCell>{formatRupiah(asset.Penyusutan_Tahun)}</TableCell>
-                        <TableCell className="font-semibold">{formatRupiah(asset.bookValue)}</TableCell>
+                        <TableCell className="text-right">{formatRupiah(asset.Nilai_Perolehan)}</TableCell>
+                        <TableCell className="text-right">{formatRupiah(asset.Penyusutan_Tahun)}</TableCell>
+                        <TableCell className="font-semibold text-right">{formatRupiah(asset.bookValue)}</TableCell>
                     </TableRow>
                     ))
                 ) : (

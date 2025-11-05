@@ -6,7 +6,7 @@ import { notFound } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Loader2, Printer } from 'lucide-react';
 import { formatRupiah } from '@/lib/utils';
-import { Coffee } from 'lucide-react';
+import Image from 'next/image';
 
 export default function PrintableInvoicePage({ params }: { params: { id: string } }) {
   const [invoice, setInvoice] = useState<SalesInvoice | null>(null);
@@ -53,16 +53,20 @@ export default function PrintableInvoicePage({ params }: { params: { id: string 
   const grandTotal = invoice.Total_Invoice;
 
   return (
-    <div className="bg-white text-black p-8 font-sans max-w-4xl mx-auto">
+    <div className="bg-white text-black p-8 font-sans max-w-4xl mx-auto print:p-0">
        <header className="flex justify-between items-start mb-8 border-b pb-6">
         <div>
-            <div className="flex items-center gap-3 mb-4">
-                <div className="flex size-12 items-center justify-center rounded-lg bg-gray-800 text-white">
-                    <Coffee className="size-7" />
-                </div>
+            <div className="flex items-center gap-4 mb-4">
+                {settings?.company_logo ? (
+                    <Image src={settings.company_logo} alt="Company Logo" width={100} height={100} className="object-contain h-16 w-auto" />
+                ) : (
+                    <div className="flex size-12 items-center justify-center rounded-lg bg-gray-800 text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-7"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V8Z"/><path d="M6 1V4m4-3v3m4-3v3"/></svg>
+                    </div>
+                )}
                 <div>
                     <h1 className="text-2xl font-bold text-gray-800">{settings?.company_name || 'BlackHorse Roastery'}</h1>
-                    <p className="text-sm text-gray-500">Jl. Kopi No. 123, Kota Kopi, Indonesia</p>
+                    <p className="text-sm text-gray-500 whitespace-pre-line">{settings?.company_address || 'Jl. Kopi No. 123, Kota Kopi, Indonesia'}</p>
                 </div>
             </div>
             <div className="text-sm">
@@ -71,7 +75,7 @@ export default function PrintableInvoicePage({ params }: { params: { id: string 
                 {/* Add more customer details if available */}
             </div>
         </div>
-        <div className="text-right">
+        <div className="text-right flex-shrink-0">
             <h1 className="text-4xl font-bold text-gray-800 uppercase tracking-wider">Invoice</h1>
             <div className="space-y-1 mt-2 text-sm">
                 <p><span className="font-semibold">No. Invoice:</span> {invoice.No_Invoice}</p>
@@ -107,11 +111,9 @@ export default function PrintableInvoicePage({ params }: { params: { id: string 
       </main>
 
       <footer className="flex justify-between items-start">
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-gray-600 max-w-xs">
             <h3 className="font-semibold text-gray-800 mb-2">Catatan:</h3>
-            <p>Pembayaran dapat dilakukan melalui transfer ke:</p>
-            <p className="font-medium">Bank Kopi Indonesia - 123-456-7890</p>
-            <p className="font-medium">a.n. {settings?.company_name || 'BlackHorse Roastery'}</p>
+            <p className="whitespace-pre-line">{settings?.invoice_notes || 'Terima kasih atas pembayaran Anda.'}</p>
         </div>
         <div className="w-1/3 text-sm">
             <div className="flex justify-between border-b py-1"><span className="text-gray-600">Subtotal</span><span>{formatRupiah(subtotal)}</span></div>

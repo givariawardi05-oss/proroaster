@@ -444,12 +444,18 @@ export async function saveSettings(prevState: ActionState, formData: FormData): 
         company_name: z.string().min(1, "Nama perusahaan wajib diisi"),
         stock_low_limit: z.coerce.number().min(0, "Batas stok tidak boleh negatif"),
         modal_awal: z.coerce.number().min(0, "Modal awal tidak boleh negatif"),
+        company_address: z.string().optional(),
+        invoice_notes: z.string().optional(),
+        company_logo: z.string().optional(),
     });
 
     const parsed = SettingsSchema.safeParse({
         company_name: formData.get('company_name'),
         stock_low_limit: formData.get('stock_low_limit'),
         modal_awal: formData.get('modal_awal'),
+        company_address: formData.get('company_address'),
+        invoice_notes: formData.get('invoice_notes'),
+        company_logo: formData.get('company_logo'),
     });
 
     if (!parsed.success) {

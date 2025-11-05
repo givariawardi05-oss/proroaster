@@ -87,7 +87,7 @@ export function StoreInventory({ data, onDataChange }: StoreInventoryProps) {
                   Buat Blend Produk
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-3xl">
+              <DialogContent className="max-w-4xl">
                 <DialogHeader>
                   <DialogTitle>Buat Produk Blend Baru</DialogTitle>
                   <DialogDescription>
@@ -105,7 +105,7 @@ export function StoreInventory({ data, onDataChange }: StoreInventoryProps) {
                   Tambah Produk Manual
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Tambah/Update Produk Manual</DialogTitle>
                   <DialogDescription>

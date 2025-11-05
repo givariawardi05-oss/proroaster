@@ -52,7 +52,7 @@ export function Roasting({ data, onDataChange }: RoastingProps) {
               Buat Batch Roasting
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-4xl">
+          <DialogContent className="max-w-5xl">
             <DialogHeader>
               <DialogTitle>Batch Roasting Baru</DialogTitle>
               <DialogDescription>

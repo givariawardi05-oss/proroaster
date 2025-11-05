@@ -32,7 +32,7 @@ export default function MainLayout({ initialData }: MainLayoutProps) {
   const [activeSection, setActiveSection] = useState<SectionName>('dashboard');
   const [data, setData] = useState<GlobalData>(initialData);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
-  const { setOpen, open } = useSidebar();
+  const { setOpen } = useSidebar();
 
   useEffect(() => {
     const loadData = async () => {
@@ -109,29 +109,33 @@ export default function MainLayout({ initialData }: MainLayoutProps) {
       <div className='flex h-screen bg-background'>
         <AppSidebar activeSection={activeSection} setActiveSection={setActiveSection} />
         <div className={cn(
-            'flex-1 flex flex-col overflow-hidden transition-[margin-left] duration-300 ease-in-out',
+            'flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out',
             'lg:ml-64'
           )}>
            <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
-              <Button variant="ghost" size="icon" onClick={() => setOpen(true)} className='lg:hidden'>
-                  <Menu className='h-6 w-6' />
-                  <span className='sr-only'>Buka Sidebar</span>
-              </Button>
-              <div className="flex-1">
-                  <h1 className="text-xl font-semibold">{sectionTitles[activeSection]}</h1>
-              </div>
-              <div className='relative w-full max-w-xs'>
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="Cari..." className="pl-9 bg-secondary" />
-              </div>
-              <div className='ml-auto flex items-center gap-2'>
-                  <Button variant="ghost" size="icon" className="rounded-full">
-                      <Bell className="h-5 w-5"/>
-                  </Button>
+             <div className="flex h-full w-full items-center max-w-screen-2xl mx-auto">
+                <Button variant="ghost" size="icon" onClick={() => setOpen(true)} className='lg:hidden'>
+                    <Menu className='h-6 w-6' />
+                    <span className='sr-only'>Buka Sidebar</span>
+                </Button>
+                <div className="flex-1">
+                    <h1 className="text-xl font-semibold">{sectionTitles[activeSection]}</h1>
+                </div>
+                <div className='relative w-full max-w-xs'>
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input placeholder="Cari..." className="pl-9 bg-secondary" />
+                </div>
+                <div className='ml-auto flex items-center gap-2'>
+                    <Button variant="ghost" size="icon" className="rounded-full">
+                        <Bell className="h-5 w-5"/>
+                    </Button>
+                </div>
               </div>
           </header>
           <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-              {renderSection()}
+              <div className="max-w-screen-2xl mx-auto">
+                {renderSection()}
+              </div>
           </main>
         </div>
       </div>

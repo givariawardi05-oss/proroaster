@@ -77,7 +77,7 @@ export function Assets({ data, onDataChange }: AssetsProps) {
               Tambah Aset
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
               <DialogTitle>Tambah Aset Baru</DialogTitle>
               <DialogDescription>Isi formulir di bawah ini untuk menambahkan aset baru ke dalam sistem.</DialogDescription>

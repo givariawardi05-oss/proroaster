@@ -109,7 +109,7 @@ export function Purchases({ data, onDataChange }: PurchasesProps) {
               Buat Faktur Baru
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-4xl">
+          <DialogContent className="max-w-5xl">
             <DialogHeader>
               <DialogTitle>{selectedInvoice ? 'Edit Faktur Pembelian' : 'Faktur Pembelanjaan Baru'}</DialogTitle>
               <DialogDescription>
@@ -165,9 +165,9 @@ export function Purchases({ data, onDataChange }: PurchasesProps) {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => openEditDialog(inv)}>
+                            <DropdownMenuItem onClick={() => openEditDialog(inv)} disabled={true}>
                               <Edit className="mr-2 h-4 w-4" />
-                              <span>Edit</span>
+                              <span>Edit (Segera)</span>
                             </DropdownMenuItem>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>

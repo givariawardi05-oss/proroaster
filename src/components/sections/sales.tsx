@@ -69,7 +69,7 @@ export function Sales({ data, onDataChange }: SalesProps) {
               Buat Invoice Baru
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-4xl">
+          <DialogContent className="max-w-5xl">
             <DialogHeader>
               <DialogTitle>Invoice Penjualan Baru</DialogTitle>
               <DialogDescription>

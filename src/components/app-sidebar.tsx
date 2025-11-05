@@ -9,6 +9,7 @@ import {
   SidebarMenuButton,
   SidebarFooter,
   SidebarSeparator,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import {
     LayoutDashboard,
@@ -24,12 +25,9 @@ import {
     Scale,
     Settings,
     Database,
-    CircleHelp,
-    LogOut,
     Coffee
 } from 'lucide-react';
 import type { SectionName } from '@/lib/definitions';
-import { Button } from './ui/button';
 
 interface AppSidebarProps {
   activeSection: SectionName;
@@ -51,55 +49,59 @@ const navItems = [
 ];
 
 export function AppSidebar({ activeSection, setActiveSection }: AppSidebarProps) {
+  const { setOpen } = useSidebar();
+  
+  const handleSectionClick = (section: SectionName) => {
+    setActiveSection(section);
+    setOpen(false); // Close sidebar on mobile after clicking an item
+  }
+
   return (
     <Sidebar>
-      <SidebarHeader className='p-4'>
-        <div className="flex items-center gap-2">
-            <div className="flex size-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-purple-500">
+      <SidebarHeader>
+        <div className="flex items-center gap-3">
+            <div className="flex size-11 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-purple-600">
                 <Coffee className="size-6 text-primary-foreground" />
             </div>
             <div>
-                <h1 className="font-semibold text-lg text-sidebar-foreground">BlackHorse</h1>
-                <p className="text-xs text-sidebar-foreground/70">Roastery</p>
+                <h1 className="font-bold text-xl text-sidebar-foreground">BlackHorse</h1>
+                <p className="text-sm text-sidebar-foreground/70 -mt-1">Roastery</p>
             </div>
         </div>
       </SidebarHeader>
-      <SidebarMenu className="flex-1 overflow-y-auto px-2">
+      <SidebarMenu>
         {navItems.map((item) => (
           <SidebarMenuItem key={item.id}>
             <SidebarMenuButton
-              onClick={() => setActiveSection(item.id as SectionName)}
+              onClick={() => handleSectionClick(item.id as SectionName)}
               isActive={activeSection === item.id}
-              tooltip={item.label}
               className='justify-start'
             >
-              <item.icon className="size-4" />
+              <item.icon className="size-5" />
               <span>{item.label}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         ))}
       </SidebarMenu>
-      <SidebarFooter className='px-2'>
+      <SidebarFooter>
         <SidebarSeparator />
         <SidebarMenuItem>
             <SidebarMenuButton
-                onClick={() => setActiveSection('settings')}
+                onClick={() => handleSectionClick('settings')}
                 isActive={activeSection === 'settings'}
-                tooltip="Pengaturan"
                 className='justify-start'
             >
-                <Settings className="size-4" />
+                <Settings className="size-5" />
                 <span>Pengaturan</span>
             </SidebarMenuButton>
         </SidebarMenuItem>
         <SidebarMenuItem>
             <SidebarMenuButton
-                onClick={() => setActiveSection('sync')}
+                onClick={() => handleSectionClick('sync')}
                 isActive={activeSection === 'sync'}
-                tooltip="Sinkronisasi"
                 className='justify-start'
             >
-                <Database className="size-4" />
+                <Database className="size-5" />
                 <span>Sinkronisasi</span>
             </SidebarMenuButton>
         </SidebarMenuItem>

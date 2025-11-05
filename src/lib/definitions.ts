@@ -37,6 +37,7 @@ export type RoastingBatch = {
 export type RoastedInventoryItem = {
     id: string;
     Produk_Roasting: string;
+    Kategori: string;
     Stock_Kg: number;
     HPP_Per_Kg: number;
     Harga_Jual_Kg: number;

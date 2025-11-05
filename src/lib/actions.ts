@@ -1,7 +1,7 @@
 "use server";
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import type { GlobalData, PurchaseItem, SalesItem, Asset, Settings, StorableGlobalData, BlendComponent, PurchaseInvoice } from './definitions';
+import type { GlobalData, PurchaseItem, SalesItem, Asset, Settings, StorableGlobalData, BlendComponent, PurchaseInvoice, StoreInventoryItem } from './definitions';
 
 const safeParseFloat = (val: any): number => {
     const num = parseFloat(val);
@@ -15,6 +15,12 @@ type ActionState = {
   errors?: any;
 } | null;
 
+type ActionStateWithData<T> = {
+  message: string;
+  status: 'success' | 'error';
+  data?: T;
+  errors?: any;
+}
 
 // --- Purchase Invoice Action ---
 export async function createPurchase(prevState: ActionState, formData: FormData): Promise<ActionState> {
@@ -174,6 +180,7 @@ export async function createRoastingBatch(prevState: ActionState, formData: Form
         } else {
             updatedDb.roastedInventory.push({
                 id: roastedProductName.replace(/\s+/g, '-').toLowerCase(),
+                Kategori: 'Roasted Beans',
                 Produk_Roasting: roastedProductName,
                 Stock_Kg: batchData.Output_Kg,
                 HPP_Per_Kg: batchData.HPP_Per_Kg,
@@ -227,6 +234,7 @@ export async function transferToStore(prevState: ActionState, formData: FormData
             const storeInvIndex = updatedDb.storeInventory.findIndex(si => si.Nama_Produk === roastedDoc.Produk_Roasting);
             const hpp = safeParseFloat(roastedDoc.HPP_Per_Kg);
             const valueToTransfer = stockToTransfer * hpp;
+            const category = roastedDoc.Kategori || 'Roasted Beans';
 
             if (storeInvIndex > -1) {
                 const storeInvItem = updatedDb.storeInventory[storeInvIndex];
@@ -244,9 +252,9 @@ export async function transferToStore(prevState: ActionState, formData: FormData
                 storeInvItem.Harga_Jual_Kg = storeInvItem.Harga_Jual_Kg > 0 ? storeInvItem.Harga_Jual_Kg : hpp * 1.5;
             } else {
                 updatedDb.storeInventory.push({
-                    id: roastedDoc.Produk_Roasting.replace(/\s+/g, '-').toLowerCase(),
+                    id: roastedDoc.Produk_Roasting.replace(/\s+/g, '-').toLowerCase() + `-${Date.now()}`,
                     Nama_Produk: roastedDoc.Produk_Roasting,
-                    Kategori: 'Roasted Beans',
+                    Kategori: category,
                     Stock_Kg: stockToTransfer,
                     HPP_Per_Kg: hpp,
                     // Set a default sell price, can be updated manually later
@@ -385,7 +393,7 @@ export async function addManualStock(prevState: ActionState, formData: FormData)
             storeItem.Kategori = stockData.Kategori;
         } else {
             updatedDb.storeInventory.push({
-                id: stockData.Nama_Produk.replace(/\s+/g, '-').toLowerCase(),
+                id: stockData.Nama_Produk.replace(/\s+/g, '-').toLowerCase() + `-${Date.now()}`,
                 ...stockData,
                 Total_Value: stockData.Stock_Kg * stockData.HPP_Per_Kg,
             });
@@ -510,11 +518,10 @@ export async function createBlend(prevState: ActionState, formData: FormData): P
         const blendData = {
             name: formData.get('blendName') as string,
             totalQty: safeParseFloat(formData.get('totalQty')),
-            sellPrice: safeParseFloat(formData.get('sellPrice')),
             components: JSON.parse(formData.get('components') as string) as BlendComponent[],
         };
 
-        if (!blendData.name || blendData.totalQty <= 0 || blendData.sellPrice <= 0 || blendData.components.length === 0) {
+        if (!blendData.name || blendData.totalQty <= 0 || blendData.components.length === 0) {
             throw new Error("Data blend tidak lengkap. Harap isi semua field.");
         }
 
@@ -526,7 +533,6 @@ export async function createBlend(prevState: ActionState, formData: FormData): P
         let updatedDb: StorableGlobalData = {
             ...db,
             roastedInventory: [...db.roastedInventory],
-            storeInventory: [...db.storeInventory],
             transactions: [...db.transactions],
         };
 
@@ -552,29 +558,28 @@ export async function createBlend(prevState: ActionState, formData: FormData): P
         const finalHppPerKg = blendData.totalQty > 0 ? calculatedHpp / blendData.totalQty : 0;
         const totalValue = blendData.totalQty * finalHppPerKg;
 
-        // Add or update blend in store inventory
-        const storeIndex = updatedDb.storeInventory.findIndex(s => s.Nama_Produk === blendData.name);
-        if (storeIndex > -1) {
-            const storeItem = updatedDb.storeInventory[storeIndex];
-            const oldStock = storeItem.Stock_Kg;
-            const oldValue = storeItem.Total_Value;
+        // Add or update blend in ROASTED inventory
+        const roastedIndex = updatedDb.roastedInventory.findIndex(s => s.Produk_Roasting === blendData.name);
+        if (roastedIndex > -1) {
+            const roastedItem = updatedDb.roastedInventory[roastedIndex];
+            const oldStock = roastedItem.Stock_Kg;
+            const oldValue = roastedItem.Total_Value;
 
             const newStock = oldStock + blendData.totalQty;
             const newValue = oldValue + totalValue;
             
-            storeItem.Stock_Kg = newStock;
-            storeItem.Total_Value = newValue;
-            storeItem.HPP_Per_Kg = newStock > 0 ? newValue / newStock : 0;
-            storeItem.Harga_Jual_Kg = blendData.sellPrice;
-            storeItem.Kategori = 'Blend';
+            roastedItem.Stock_Kg = newStock;
+            roastedItem.Total_Value = newValue;
+            roastedItem.HPP_Per_Kg = newStock > 0 ? newValue / newStock : 0;
+            roastedItem.Kategori = 'Blend';
         } else {
-            updatedDb.storeInventory.push({
-                id: blendData.name.replace(/\s+/g, '-').toLowerCase(),
-                Nama_Produk: blendData.name,
+            updatedDb.roastedInventory.push({
+                id: blendData.name.replace(/\s+/g, '-').toLowerCase() + `-${Date.now()}`,
+                Produk_Roasting: blendData.name,
                 Kategori: 'Blend',
                 Stock_Kg: blendData.totalQty,
                 HPP_Per_Kg: finalHppPerKg,
-                Harga_Jual_Kg: blendData.sellPrice,
+                Harga_Jual_Kg: 0, // Sell price is set when moved to store
                 Total_Value: totalValue,
             });
         }
@@ -758,5 +763,69 @@ export async function updatePurchase(prevState: ActionState, formData: FormData)
     } catch (e: any) {
         console.error("Error updating purchase:", e);
         return { message: `Gagal memperbarui faktur: ${e.message}`, status: 'error' };
+    }
+}
+
+
+// --- Store Item Actions ---
+export async function updateStoreItem(prevState: ActionState, formData: FormData): Promise<ActionState> {
+  const schema = z.object({
+    itemId: z.string(),
+    Nama_Produk: z.string().min(3, "Nama produk minimal 3 karakter"),
+    Kategori: z.string().min(1, "Kategori wajib diisi"),
+    Harga_Jual_Kg: z.coerce.number().min(0, "Harga jual tidak boleh negatif"),
+  });
+  
+  try {
+    const db: GlobalData = JSON.parse(formData.get('currentData') as string);
+    const parsed = schema.parse({
+        itemId: formData.get('itemId'),
+        Nama_Produk: formData.get('Nama_Produk'),
+        Kategori: formData.get('Kategori'),
+        Harga_Jual_Kg: formData.get('Harga_Jual_Kg'),
+    });
+
+    const updatedStoreInventory = db.storeInventory.map(item => {
+      if (item.id === parsed.itemId) {
+        return {
+          ...item,
+          Nama_Produk: parsed.Nama_Produk,
+          Kategori: parsed.Kategori,
+          Harga_Jual_Kg: parsed.Harga_Jual_Kg,
+        };
+      }
+      return item;
+    });
+    
+    const updatedDb: StorableGlobalData = { ...db, storeInventory: updatedStoreInventory };
+    revalidatePath('/');
+    return { message: 'Produk berhasil diupdate!', status: 'success', data: updatedDb };
+
+  } catch (e: any) {
+    if (e instanceof z.ZodError) {
+        return { message: 'Data tidak valid', status: 'error', errors: e.flatten().fieldErrors };
+    }
+    return { message: `Gagal mengupdate produk: ${e.message}`, status: 'error' };
+  }
+}
+
+export async function deleteStoreItem(prevState: ActionState, { currentData, itemId }: { currentData: GlobalData, itemId: string }): Promise<ActionStateWithData<StorableGlobalData>> {
+    try {
+        const itemToDelete = currentData.storeInventory.find(item => item.id === itemId);
+
+        if (!itemToDelete) {
+            throw new Error("Produk tidak ditemukan.");
+        }
+        if (itemToDelete.Stock_Kg > 0) {
+            throw new Error("Tidak dapat menghapus produk dengan stok lebih dari nol.");
+        }
+
+        const updatedStoreInventory = currentData.storeInventory.filter(item => item.id !== itemId);
+        const updatedDb: StorableGlobalData = { ...currentData, storeInventory: updatedStoreInventory };
+
+        revalidatePath('/');
+        return { message: 'Produk berhasil dihapus.', status: 'success', data: updatedDb };
+    } catch (e: any) {
+        return { message: `Gagal menghapus produk: ${e.message}`, status: 'error' };
     }
 }

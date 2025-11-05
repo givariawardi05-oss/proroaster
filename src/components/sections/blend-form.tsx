@@ -24,7 +24,6 @@ const blendComponentSchema = z.object({
 const blendSchema = z.object({
   blendName: z.string().min(3, "Nama blend minimal 3 karakter"),
   totalQty: z.coerce.number().min(0.1, "Jumlah total harus lebih dari 0"),
-  sellPrice: z.coerce.number().min(1, "Harga jual harus lebih dari 0"),
   components: z.array(blendComponentSchema).min(1, "Harus ada minimal 1 komponen"),
 });
 
@@ -41,7 +40,7 @@ export function BlendForm({ onFormSubmit, currentData }: BlendFormProps) {
   const [isTransitioning, startTransition] = useTransition();
 
   const availableComponents = useMemo(() => 
-    (currentData.roastedInventory || []).filter(item => item.Stock_Kg > 0)
+    (currentData.roastedInventory || []).filter(item => item.Stock_Kg > 0 && item.Kategori !== 'Blend')
   , [currentData.roastedInventory]);
 
   const {
@@ -56,7 +55,6 @@ export function BlendForm({ onFormSubmit, currentData }: BlendFormProps) {
     defaultValues: {
       blendName: "",
       totalQty: 1,
-      sellPrice: 0,
       components: [],
     },
   });
@@ -90,7 +88,6 @@ export function BlendForm({ onFormSubmit, currentData }: BlendFormProps) {
       });
       formData.append('blendName', data.blendName);
       formData.append('totalQty', String(data.totalQty));
-      formData.append('sellPrice', String(data.sellPrice));
       formData.append('components', JSON.stringify(finalComponents));
       formData.append('currentData', JSON.stringify(currentData));
       formAction(formData);
@@ -99,7 +96,7 @@ export function BlendForm({ onFormSubmit, currentData }: BlendFormProps) {
 
   return (
     <form onSubmit={handleSubmit(onFormSubmitWithData)} className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="md:col-span-1">
           <Label htmlFor="blendName">Nama Blend Baru</Label>
           <Input id="blendName" {...register("blendName")} placeholder="Contoh: House Blend" />
@@ -110,16 +107,11 @@ export function BlendForm({ onFormSubmit, currentData }: BlendFormProps) {
           <Input id="totalQty" type="number" step="0.1" {...register("totalQty")} />
           {errors.totalQty && <p className="text-destructive text-sm mt-1">{errors.totalQty.message}</p>}
         </div>
-        <div>
-          <Label htmlFor="sellPrice">Harga Jual / kg (Rp)</Label>
-          <Input id="sellPrice" type="number" {...register("sellPrice")} />
-          {errors.sellPrice && <p className="text-destructive text-sm mt-1">{errors.sellPrice.message}</p>}
-        </div>
       </div>
       
       <div className="border rounded-lg p-4 space-y-3 bg-muted/20">
         <div className="flex justify-between items-center">
-            <h4 className="font-semibold">Komponen Blend</h4>
+            <h4 className="font-semibold">Komponen Blend (Single Origin)</h4>
              <div className={`font-semibold text-sm ${totalPercentage !== 100 ? 'text-destructive' : 'text-green-600'}`}>
                 Total: {totalPercentage}%
             </div>

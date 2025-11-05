@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useTransition } from 'react';
 import {
   Table,
   TableBody,
@@ -19,12 +19,32 @@ import {
   DialogTrigger,
   DialogDescription,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { StatCard } from '@/components/stat-card';
 import { formatRupiah } from '@/lib/utils';
 import type { GlobalData, StoreInventoryItem } from '@/lib/definitions';
-import { Package, DollarSign, CheckCircle, AlertTriangle, PlusCircle, Blend } from 'lucide-react';
+import { Package, DollarSign, CheckCircle, AlertTriangle, PlusCircle, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 import { ManualStockForm } from './manual-stock-form';
-import { BlendForm } from './blend-form';
+import { StoreItemForm } from './store-item-form';
+import { useToast } from '@/hooks/use-toast';
+import { deleteStoreItem } from '@/lib/actions';
+import { SubmitButton } from '../submit-button';
 
 interface StoreInventoryProps {
   data: GlobalData;
@@ -36,7 +56,11 @@ type FilterType = 'all' | 'low' | 'available';
 export function StoreInventory({ data, onDataChange }: StoreInventoryProps) {
   const [filter, setFilter] = useState<FilterType>('all');
   const [isManualDialogOpen, setIsManualDialogOpen] = useState(false);
-  const [isBlendDialogOpen, setIsBlendDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<StoreInventoryItem | null>(null);
+  const [isDeleting, startDeleteTransition] = useTransition();
+  const { toast } = useToast();
+
   const lowStockLimit = data.settings.stock_low_limit || 10;
 
   const stats = useMemo(() => {
@@ -62,15 +86,36 @@ export function StoreInventory({ data, onDataChange }: StoreInventoryProps) {
     return { text: 'Tersedia', variant: 'outline', className: 'border-green-500 bg-green-50 text-green-700' };
   };
   
-  const handleManualFormSubmit = (newData: GlobalData | Omit<GlobalData, 'nextIds' | 'currentBalance'>) => {
+  const handleFormSubmit = (newData: GlobalData | Omit<GlobalData, 'nextIds' | 'currentBalance'>) => {
     onDataChange(newData);
     setIsManualDialogOpen(false);
+    setIsEditDialogOpen(false);
+    setSelectedItem(null);
+  }
+
+  const handleEditClick = (item: StoreInventoryItem) => {
+    setSelectedItem(item);
+    setIsEditDialogOpen(true);
   }
   
-  const handleBlendFormSubmit = (newData: GlobalData | Omit<GlobalData, 'nextIds' | 'currentBalance'>) => {
-    onDataChange(newData);
-    setIsBlendDialogOpen(false);
-  }
+  const handleDeleteClick = async (itemId: string) => {
+    startDeleteTransition(async () => {
+        const result = await deleteStoreItem(null, { currentData: data, itemId });
+        if (result.status === 'success' && result.data) {
+            toast({ title: 'Sukses', description: result.message });
+            onDataChange(result.data);
+        } else {
+            toast({ title: 'Error', description: result.message, variant: 'destructive' });
+        }
+    });
+  };
+
+  useEffect(() => {
+    if (!isEditDialogOpen) {
+        setSelectedItem(null);
+    }
+  }, [isEditDialogOpen]);
+
 
   return (
     <div className="space-y-6">
@@ -80,29 +125,11 @@ export function StoreInventory({ data, onDataChange }: StoreInventoryProps) {
           <p className="text-muted-foreground">Stok siap jual di toko, termasuk merchandise dan produk blend.</p>
         </div>
         <div className="flex gap-2">
-            <Dialog open={isBlendDialogOpen} onOpenChange={setIsBlendDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline">
-                  <Blend className="mr-2 h-4 w-4" />
-                  Buat Blend Produk
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl">
-                <DialogHeader>
-                  <DialogTitle>Buat Produk Blend Baru</DialogTitle>
-                  <DialogDescription>
-                    Campurkan beberapa produk dari inventaris roasted untuk membuat produk baru.
-                  </DialogDescription>
-                </DialogHeader>
-                <BlendForm onFormSubmit={handleBlendFormSubmit} currentData={data} />
-              </DialogContent>
-            </Dialog>
-
             <Dialog open={isManualDialogOpen} onOpenChange={setIsManualDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
                   <PlusCircle className="mr-2 h-4 w-4" />
-                  Tambah Produk Manual
+                  Tambah/Update Stok Manual
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-2xl">
@@ -112,7 +139,7 @@ export function StoreInventory({ data, onDataChange }: StoreInventoryProps) {
                     Gunakan ini untuk menambahkan item non-roasting atau untuk menyesuaikan stok.
                   </DialogDescription>
                 </DialogHeader>
-                <ManualStockForm onFormSubmit={handleManualFormSubmit} currentData={data} />
+                <ManualStockForm onFormSubmit={handleFormSubmit} currentData={data} />
               </DialogContent>
             </Dialog>
         </div>
@@ -124,6 +151,18 @@ export function StoreInventory({ data, onDataChange }: StoreInventoryProps) {
         <StatCard title="Ready to Sell" value={stats.readyToSell.toString()} icon={<CheckCircle />} description="Produk dengan stok > 0" />
         <StatCard title="Low Stock Alert" value={stats.lowStockCount.toString()} icon={<AlertTriangle />} description={`Stok < ${lowStockLimit} kg`} colorClass="text-destructive" />
       </div>
+      
+       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-xl">
+            <DialogHeader>
+              <DialogTitle>Edit Produk Toko</DialogTitle>
+              <DialogDescription>
+                Ubah detail produk. Stok dan HPP tidak dapat diubah dari sini.
+              </DialogDescription>
+            </DialogHeader>
+            <StoreItemForm onFormSubmit={handleFormSubmit} currentData={data} itemToEdit={selectedItem} />
+          </DialogContent>
+        </Dialog>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
@@ -145,6 +184,7 @@ export function StoreInventory({ data, onDataChange }: StoreInventoryProps) {
                 <TableHead className="text-right">Harga Jual/kg</TableHead>
                 <TableHead className="text-right">Total Value</TableHead>
                 <TableHead className="text-center">Status</TableHead>
+                <TableHead className="text-right">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -164,12 +204,58 @@ export function StoreInventory({ data, onDataChange }: StoreInventoryProps) {
                         <TableCell className="text-center">
                             <Badge variant={status.variant} className={status.className}>{status.text}</Badge>
                         </TableCell>
+                        <TableCell className="text-right">
+                             <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className="h-8 w-8 p-0">
+                                    <span className="sr-only">Buka menu</span>
+                                    <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleEditClick(item)}>
+                                        <Edit className="mr-2 h-4 w-4" />
+                                        <span>Edit</span>
+                                    </DropdownMenuItem>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} disabled={item.Stock_Kg > 0}>
+                                                <Trash2 className="mr-2 h-4 w-4 text-destructive" />
+                                                <span className="text-destructive">Hapus</span>
+                                            </DropdownMenuItem>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                            <AlertDialogTitle>Apakah Anda Yakin?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                Tindakan ini akan menghapus produk <span className="font-bold">{item.Nama_Produk}</span> secara permanen dari daftar.
+                                                Hanya produk dengan stok 0 yang dapat dihapus.
+                                            </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                            <AlertDialogCancel>Batal</AlertDialogCancel>
+                                                <AlertDialogAction asChild>
+                                                    <SubmitButton
+                                                        variant="destructive"
+                                                        onClick={() => handleDeleteClick(item.id)}
+                                                        pending={isDeleting}
+                                                        pendingText="Menghapus..."
+                                                    >
+                                                        Ya, Hapus Produk
+                                                    </SubmitButton>
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </TableCell>
                     </TableRow>
                    )
                 })
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center h-24">
+                  <TableCell colSpan={8} className="text-center h-24">
                     Tidak ada produk di toko.
                   </TableCell>
                 </TableRow>

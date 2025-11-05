@@ -22,6 +22,7 @@ import { formatRupiah } from '@/lib/utils';
 import type { GlobalData, SalesInvoice, StoreInventoryItem } from '@/lib/definitions';
 import { PlusCircle } from 'lucide-react';
 import { SalesForm } from './sales-form';
+import { cn } from '@/lib/utils';
 
 interface SalesProps {
   data: GlobalData;

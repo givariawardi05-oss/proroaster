@@ -71,7 +71,8 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit }: PurchaseFormPr
   }, [total, setValue]);
 
   useEffect(() => {
-    if (state?.status === "success") {
+    if (!state) return;
+    if (state.status === "success") {
       toast({ title: "Sukses!", description: state.message });
       reset({
         invoiceNumber: `FP-${Date.now()}`,
@@ -81,7 +82,7 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit }: PurchaseFormPr
         total: 0,
       });
       onFormSubmit();
-    } else if (state?.status === "error") {
+    } else if (state.status === "error") {
       toast({
         title: "Error!",
         description: state.message,

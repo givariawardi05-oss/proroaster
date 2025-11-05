@@ -42,9 +42,10 @@ export function Settings({ data }: SettingsProps) {
   });
 
   useEffect(() => {
-    if (state?.status === 'success') {
+    if (!state) return;
+    if (state.status === 'success') {
       toast({ title: 'Sukses!', description: state.message });
-    } else if (state?.status === 'error') {
+    } else if (state.status === 'error') {
       toast({
         title: 'Error!',
         description: state.message || 'Terjadi kesalahan saat menyimpan.',

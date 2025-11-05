@@ -88,11 +88,12 @@ export function RoastingForm({ nextBatchId, availableBeans, onFormSubmit }: Roas
   }, [calculations.hppPerKg, setValue]);
 
   useEffect(() => {
-    if (state?.status === "success") {
+    if (!state) return;
+    if (state.status === "success") {
       toast({ title: "Sukses!", description: state.message });
       reset();
       onFormSubmit();
-    } else if (state?.status === "error") {
+    } else if (state.status === "error") {
       toast({
         title: "Error!",
         description: state.message,

@@ -27,6 +27,7 @@ interface RoastedInventoryProps {
 export function RoastedInventory({ data, onDataChange }: RoastedInventoryProps) {
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
+  const { toast } = useToast();
 
   const stats = useMemo(() => {
     const totalStock = (data.roastedInventory || []).reduce((sum, item) => sum + (item.Stock_Kg || 0), 0);

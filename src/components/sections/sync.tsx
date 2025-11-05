@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { resetAllData } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { AlertTriangle, Download, Upload } from 'lucide-react';
-import { getAllData, writeAllData } from '@/lib/local-storage-helpers';
+import { writeAllData } from '@/lib/local-storage-helpers';
 import type { GlobalData } from '@/lib/definitions';
 import { SubmitButton } from '../submit-button';
 
@@ -27,6 +27,7 @@ interface SyncProps {
 
 export function Sync({ currentData, onDataChange }: SyncProps) {
   const [state, formAction, isPending] = useActionState(resetAllData.bind(null, currentData), null);
+  const { toast } = useToast();
 
  React.useEffect(() => {
     if (!state) return;
@@ -43,7 +44,7 @@ export function Sync({ currentData, onDataChange }: SyncProps) {
           variant: 'destructive',
         });
     }
- }, [state, onDataChange]);
+ }, [state, onDataChange, toast]);
 
 
   const handleExport = async () => {

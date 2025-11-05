@@ -26,6 +26,7 @@ type SettingsFormValues = z.infer<typeof settingsSchema>;
 
 export function Settings({ data, onDataChange }: SettingsProps) {
   const [state, formAction, isPending] = useActionState(saveSettings.bind(null, data), null);
+  const { toast } = useToast();
   const [isTransitioning, startTransition] = useTransition();
 
   const {
@@ -53,7 +54,7 @@ export function Settings({ data, onDataChange }: SettingsProps) {
         variant: 'destructive',
       });
     }
-  }, [state, onDataChange]);
+  }, [state, onDataChange, toast]);
 
   const onFormSubmitWithData = (data: SettingsFormValues) => {
     startTransition(() => {

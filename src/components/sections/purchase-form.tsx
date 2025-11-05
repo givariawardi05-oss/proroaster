@@ -7,7 +7,7 @@ import { z } from "zod";
 import { createPurchase } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
 import { formatRupiah, getTodayDateString } from "@/lib/utils";
-import type { GlobalData } from "@/lib/definitions";
+import type { GlobalData, PurchaseItem } from "@/lib/definitions";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,7 @@ interface PurchaseFormProps {
 
 export function PurchaseForm({ nextInvoiceNumber, onFormSubmit, currentData }: PurchaseFormProps) {
   const [state, formAction, isPending] = useActionState(createPurchase.bind(null, currentData), null);
+  const { toast } = useToast();
   const [isTransitioning, startTransition] = useTransition();
 
   const {
@@ -90,7 +91,7 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit, currentData }: P
         variant: "destructive",
       });
     }
-  }, [state, onFormSubmit, reset, nextInvoiceNumber]);
+  }, [state, onFormSubmit, reset, nextInvoiceNumber, toast]);
   
   const onFormSubmitWithData = (data: PurchaseFormValues) => {
     startTransition(() => {

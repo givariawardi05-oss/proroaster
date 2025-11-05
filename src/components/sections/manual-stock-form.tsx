@@ -30,6 +30,7 @@ interface ManualStockFormProps {
 
 export function ManualStockForm({ onFormSubmit, currentData }: ManualStockFormProps) {
   const [state, formAction, isPending] = useActionState(addManualStock.bind(null, currentData), null);
+  const { toast } = useToast();
   const [isTransitioning, startTransition] = useTransition();
 
   const {
@@ -61,7 +62,7 @@ export function ManualStockForm({ onFormSubmit, currentData }: ManualStockFormPr
         variant: "destructive",
       });
     }
-  }, [state, onFormSubmit, reset]);
+  }, [state, onFormSubmit, reset, toast]);
   
   const onFormSubmitWithData = (data: ManualStockFormValues) => {
     startTransition(() => {

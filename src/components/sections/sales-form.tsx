@@ -7,7 +7,7 @@ import { z } from "zod";
 import { createSale } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
 import { formatRupiah, getTodayDateString } from "@/lib/utils";
-import type { GlobalData, StoreInventoryItem } from "@/lib/definitions";
+import type { GlobalData, StoreInventoryItem, SalesItem } from "@/lib/definitions";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -46,6 +46,7 @@ interface SalesFormProps {
 
 export function SalesForm({ nextInvoiceNumber, availableProducts, onFormSubmit, currentData }: SalesFormProps) {
   const [state, formAction, isPending] = useActionState(createSale.bind(null, currentData), null);
+  const { toast } = useToast();
   const [isTransitioning, startTransition] = useTransition();
 
   const {
@@ -114,7 +115,7 @@ export function SalesForm({ nextInvoiceNumber, availableProducts, onFormSubmit, 
     } else if (state.status === "error") {
       toast({ title: "Error!", description: state.message, variant: "destructive" });
     }
-  }, [state, onFormSubmit, reset]);
+  }, [state, onFormSubmit, reset, toast]);
 
   const handleProductChange = (index: number, productName: string) => {
     const product = availableProducts.find(p => p.Nama_Produk === productName);

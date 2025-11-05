@@ -39,6 +39,7 @@ interface RoastingFormProps {
 
 export function RoastingForm({ nextBatchId, availableBeans, onFormSubmit, currentData }: RoastingFormProps) {
   const [state, formAction, isPending] = useActionState(createRoastingBatch.bind(null, currentData), null);
+  const { toast } = useToast();
   const [isTransitioning, startTransition] = useTransition();
 
   const {
@@ -108,7 +109,7 @@ export function RoastingForm({ nextBatchId, availableBeans, onFormSubmit, curren
         variant: "destructive",
       });
     }
-  }, [state, onFormSubmit, reset]);
+  }, [state, onFormSubmit, reset, toast]);
   
   const onFormSubmitWithData = (data: RoastingFormValues) => {
     startTransition(() => {

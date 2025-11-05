@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useFormState } from "react-dom";
@@ -27,6 +27,7 @@ const roastingSchema = z.object({
   gasCost: z.coerce.number().min(0),
   laborCost: z.coerce.number().min(0),
   otherCost: z.coerce.number().min(0),
+  hppPerKg: z.coerce.number(),
 });
 
 type RoastingFormValues = z.infer<typeof roastingSchema>;
@@ -81,6 +82,10 @@ export function RoastingForm({ nextBatchId, availableBeans, onFormSubmit }: Roas
   }, [watchedValues, availableBeans]);
 
   useEffect(() => {
+    setValue('hppPerKg', calculations.hppPerKg);
+  }, [calculations.hppPerKg, setValue]);
+
+  useEffect(() => {
     if (state?.status === "success") {
       toast({ title: "Sukses!", description: state.message });
       onFormSubmit();
@@ -93,31 +98,32 @@ export function RoastingForm({ nextBatchId, availableBeans, onFormSubmit }: Roas
     }
   }, [state, onFormSubmit]);
   
-  const processForm = (data: RoastingFormValues) => {
-    const formData = new FormData();
-    Object.entries(data).forEach(([key, value]) => formData.append(key, String(value)));
-    formData.append('hppPerKg', String(calculations.hppPerKg));
-    formAction(formData);
-  }
 
   return (
-    <form onSubmit={handleSubmit(processForm)} className="space-y-4">
+    <form action={formAction} className="space-y-4">
+      <input type="hidden" {...register('hppPerKg')} />
       {/* Inputs */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div><Label>Batch ID</Label><Input {...register("batchId")} readOnly /></div>
         <div><Label>Tanggal</Label><Input type="date" {...register("date")} /></div>
         <div>
           <Label>Green Beans</Label>
-          <Select onValueChange={(value) => setValue('greenBeans', value)} >
-            <SelectTrigger><SelectValue placeholder="Pilih Green Beans" /></SelectTrigger>
-            <SelectContent>
-              {availableBeans.map(bean => (
-                <SelectItem key={bean.id} value={bean.Nama_Green_Beans}>
-                  {bean.Nama_Green_Beans} ({bean.Stock_Kg.toFixed(1)} kg)
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Controller
+            name="greenBeans"
+            control={control}
+            render={({ field }) => (
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <SelectTrigger><SelectValue placeholder="Pilih Green Beans" /></SelectTrigger>
+                    <SelectContent>
+                    {availableBeans.map(bean => (
+                        <SelectItem key={bean.id} value={bean.Nama_Green_Beans}>
+                        {bean.Nama_Green_Beans} ({bean.Stock_Kg.toFixed(1)} kg)
+                        </SelectItem>
+                    ))}
+                    </SelectContent>
+                </Select>
+            )}
+          />
           {errors.greenBeans && <p className="text-destructive text-sm mt-1">{errors.greenBeans.message}</p>}
         </div>
         <div>
@@ -129,15 +135,21 @@ export function RoastingForm({ nextBatchId, availableBeans, onFormSubmit }: Roas
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <Label>Roasting Profile</Label>
-          <Select onValueChange={(value) => setValue('profile', value)}>
-            <SelectTrigger><SelectValue placeholder="Pilih Profile" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Light">Light Roast</SelectItem>
-              <SelectItem value="Medium">Medium Roast</SelectItem>
-              <SelectItem value="Medium-Dark">Medium Dark Roast</SelectItem>
-              <SelectItem value="Dark">Dark Roast</SelectItem>
-            </SelectContent>
-          </Select>
+          <Controller
+             name="profile"
+             control={control}
+             render={({ field }) => (
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <SelectTrigger><SelectValue placeholder="Pilih Profile" /></SelectTrigger>
+                    <SelectContent>
+                    <SelectItem value="Light">Light Roast</SelectItem>
+                    <SelectItem value="Medium">Medium Roast</SelectItem>
+                    <SelectItem value="Medium-Dark">Medium Dark Roast</SelectItem>
+                    <SelectItem value="Dark">Dark Roast</SelectItem>
+                    </SelectContent>
+                </Select>
+             )}
+          />
            {errors.profile && <p className="text-destructive text-sm mt-1">{errors.profile.message}</p>}
         </div>
         <div>

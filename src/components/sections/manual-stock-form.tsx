@@ -57,15 +57,9 @@ export function ManualStockForm({ onFormSubmit }: ManualStockFormProps) {
       });
     }
   }, [state, onFormSubmit]);
-  
-  const processForm = (data: ManualStockFormValues) => {
-    const formData = new FormData();
-    Object.entries(data).forEach(([key, value]) => formData.append(key, String(value)));
-    formAction(formData);
-  }
 
   return (
-    <form onSubmit={handleSubmit(processForm)} className="space-y-4">
+    <form action={formAction} className="space-y-4">
       <div>
         <Label htmlFor="productName">Nama Produk</Label>
         <Input id="productName" {...register("productName")} placeholder="contoh: Gayo Wine" />

@@ -54,14 +54,8 @@ export function AssetForm({ onFormSubmit }: AssetFormProps) {
     }
   }, [state, onFormSubmit]);
 
-  const processForm = (data: AssetFormValues) => {
-    const formData = new FormData();
-    Object.entries(data).forEach(([key, value]) => formData.append(key, String(value)));
-    formAction(formData);
-  };
-
   return (
-    <form onSubmit={handleSubmit(processForm)} className="space-y-4">
+    <form action={formAction} className="space-y-4">
         <div>
           <Label htmlFor="name">Nama Aset</Label>
           <Input id="name" {...register("name")} />

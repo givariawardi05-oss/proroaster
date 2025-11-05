@@ -34,6 +34,7 @@ const salesSchema = z.object({
   items: z.array(salesItemSchema).min(1, "Harus ada minimal 1 item penjualan"),
   shippingCost: z.coerce.number().min(0).default(0),
   paymentMethod: z.string().min(1),
+  total: z.coerce.number(),
 });
 
 type SalesFormValues = z.infer<typeof salesSchema>;
@@ -88,6 +89,10 @@ export function SalesForm({ nextInvoiceNumber, availableProducts, onFormSubmit }
     const grandTotal = afterDiscount + (shippingCost || 0);
     return { subtotal, totalDiscount, afterDiscount, grandTotal };
   }, [watchedItems, shippingCost]);
+  
+  useEffect(() => {
+    setValue('total', totals.grandTotal);
+  }, [totals.grandTotal, setValue]);
 
   useEffect(() => {
     if (state?.status === "success") {
@@ -106,22 +111,9 @@ export function SalesForm({ nextInvoiceNumber, availableProducts, onFormSubmit }
     }
   };
   
-  const processForm = (data: SalesFormValues) => {
-    const formData = new FormData();
-    Object.entries(data).forEach(([key, value]) => {
-        if(key === 'items') {
-            formData.append(key, JSON.stringify(value));
-        } else {
-            formData.append(key, String(value));
-        }
-    });
-    formData.append('total', String(totals.grandTotal));
-    formAction(formData);
-  };
-  
-
   return (
-    <form onSubmit={handleSubmit(processForm)} className="space-y-4">
+    <form action={formAction} className="space-y-4">
+      <input type="hidden" {...register('total')} />
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div><Label>No. Invoice</Label><Input {...register("invoiceNumber")} readOnly /></div>
         <div><Label>Tanggal</Label><Input type="date" {...register("date")} /></div>

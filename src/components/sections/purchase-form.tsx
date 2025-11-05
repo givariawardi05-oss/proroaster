@@ -26,6 +26,7 @@ const purchaseSchema = z.object({
   date: z.string().min(1, "Tanggal tidak boleh kosong"),
   invoiceNumber: z.string(),
   items: z.array(purchaseItemSchema).min(1, "Harus ada minimal 1 item"),
+  total: z.coerce.number(),
 });
 
 type PurchaseFormValues = z.infer<typeof purchaseSchema>;
@@ -43,6 +44,7 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit }: PurchaseFormPr
     control,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<PurchaseFormValues>({
     resolver: zodResolver(purchaseSchema),
@@ -59,8 +61,11 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit }: PurchaseFormPr
   });
 
   const watchedItems = watch("items");
-  const subtotal = watchedItems.reduce((acc, item) => acc + (item.qty || 0) * (item.price || 0), 0);
-  const total = subtotal; // PPN removed as per user code logic
+  const total = watchedItems.reduce((acc, item) => acc + (item.qty || 0) * (item.price || 0), 0);
+  
+  useEffect(() => {
+    setValue('total', total);
+  }, [total, setValue]);
 
   useEffect(() => {
     if (state?.status === "success") {
@@ -75,18 +80,9 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit }: PurchaseFormPr
     }
   }, [state, onFormSubmit]);
 
-  const processForm = (data: PurchaseFormValues) => {
-    const formData = new FormData();
-    formData.append('supplier', data.supplier);
-    formData.append('date', data.date);
-    formData.append('invoiceNumber', data.invoiceNumber);
-    formData.append('items', JSON.stringify(data.items));
-    formData.append('total', String(total));
-    formAction(formData);
-  };
   
   return (
-    <form onSubmit={handleSubmit(processForm)} className="space-y-4">
+    <form action={formAction} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <Label htmlFor="supplier">Supplier</Label>
@@ -106,8 +102,10 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit }: PurchaseFormPr
 
       <div className="border rounded-lg p-4 space-y-3">
         <h4 className="font-semibold">Item Pembelian</h4>
+        <input type="hidden" {...register('total')} />
         {fields.map((field, index) => (
           <div key={field.id} className="grid grid-cols-12 gap-2 items-start">
+            <input type="hidden" {...register(`items.${index}.name` as const)} />
             <div className="col-span-4">
               <Label htmlFor={`items.${index}.name`} className="sr-only">Nama Green Beans</Label>
               <Input placeholder="Nama Green Beans" {...register(`items.${index}.name`)} />
@@ -145,7 +143,7 @@ export function PurchaseForm({ nextInvoiceNumber, onFormSubmit }: PurchaseFormPr
         <div className="w-full max-w-sm space-y-2">
           <div className="flex justify-between">
             <span>Subtotal:</span>
-            <span>{formatRupiah(subtotal)}</span>
+            <span>{formatRupiah(total)}</span>
           </div>
           <div className="flex justify-between font-bold text-lg border-t pt-2">
             <span>Total:</span>

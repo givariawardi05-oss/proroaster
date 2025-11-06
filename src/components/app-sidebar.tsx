@@ -115,10 +115,6 @@ export function AppSidebar({ activeSection, setActiveSection }: AppSidebarProps)
                 <span>Sinkronisasi</span>
             </SidebarMenuButton>
         </SidebarMenuItem>
-        <SidebarSeparator />
-         <div className='p-4 text-center text-xs text-sidebar-foreground/50'>
-            <p>&copy; 2024 BlackHorse Roastery</p>
-         </div>
       </SidebarFooter>
     </Sidebar>
   );

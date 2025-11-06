@@ -1,0 +1,40 @@
+type User @table {
+  displayName: String!
+  email: String!
+  createdAt: Timestamp!
+  photoUrl: String
+}
+
+type Project @table {
+  name: String!
+  firebaseProjectId: String!
+  createdAt: Timestamp!
+  ownerUser: User!
+  description: String
+}
+
+type Environment @table {
+  project: Project!
+  name: String!
+  createdAt: Timestamp!
+  description: String
+}
+
+type Deployment @table {
+  project: Project!
+  environment: Environment!
+  initiatedBy: User!
+  status: String!
+  initiatedAt: Timestamp!
+  version: String
+  commitSha: String
+  notes: String
+  finishedAt: Timestamp
+}
+
+type DeployedService @table {
+  deployment: Deployment!
+  serviceType: String!
+  status: String!
+  details: String
+}

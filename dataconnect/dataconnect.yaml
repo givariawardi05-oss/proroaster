@@ -1,0 +1,8 @@
+specVersion: "v1"
+serviceId: "studio"
+location: "asia-east1"
+schema:
+  source: "./schema"
+  datasource:
+    firestore: {}
+connectorDirs: []

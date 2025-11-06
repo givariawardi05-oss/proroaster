@@ -1,0 +1,175 @@
+/**
+ * @fileOverview Firestore Security Rules for a coffee roasting management application.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a basic authenticated-user security model with public read access for some collections where applicable.
+ * All write operations require a user to be authenticated. Schema validation is relaxed for prototyping.
+ *
+ * Data Structure:
+ * The Firestore database consists of several top-level collections:
+ * - /settings/{settingId}: Application-wide settings.
+ * - /purchase_invoices/{purchaseInvoiceId}: Purchase invoices.
+ * - /warehouse_gb/{warehouseGbId}: Green bean inventory.
+ * - /roasting_batches/{roastingBatchId}: Roasting process tracking.
+ * - /inventory_roasted/{inventoryRoastedId}: Roasted bean inventory.
+ * - /inventory_store/{inventoryStoreId}: Store inventory.
+ * - /sales_invoices/{salesInvoiceId}: Sales transactions.
+ * - /transactions/{transactionId}: Financial transaction logs.
+ * - /assets/{assetId}: Company asset management.
+ *
+ * Key Security Decisions:
+ * - All authenticated users can read `settings` and `transactions`, but write access is not explicitly defined and defaults to none.
+ * - All other collections are writeable by any authenticated user.
+ * - Schema validation is omitted for rapid prototyping.
+ *
+ * Denormalization for Authorization:
+ *  This design avoids the need for complex `get()` calls within security rules by ensuring that each document contains all the necessary information for authorization decisions.
+ *  For example, ownership is determined by direct comparison of user IDs, rather than querying separate collections.
+ *
+ * Structural Segregation:
+ *  This design uses separate collections to clearly segregate data with different access control requirements, improving security and performance.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Manages application-wide settings.
+     * @path /settings/{settingId}
+     * @allow (get, list): Any authenticated user can read settings.
+     * @deny (create, update, delete): Only admins can modify settings (not implemented in this prototype).
+     * @principle Authenticated users can read the application settings.
+     */
+    match /settings/{settingId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Manages purchase invoices from suppliers.
+     * @path /purchase_invoices/{purchaseInvoiceId}
+     * @allow (create, update, delete): Any authenticated user can create, update, and delete purchase invoices.
+     * @allow (get, list): Any authenticated user can read purchase invoices.
+     * @principle Authenticated users can manage purchase invoices.
+     */
+    match /purchase_invoices/{purchaseInvoiceId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && resource != null;
+      allow delete: if isSignedIn() && resource != null;
+    }
+
+    /**
+     * @description Manages green bean inventory in the warehouse.
+     * @path /warehouse_gb/{warehouseGbId}
+     * @allow (create, update, delete): Any authenticated user can manage green bean inventory.
+     * @allow (get, list): Any authenticated user can read green bean inventory.
+     * @principle Authenticated users can manage warehouse green bean inventory.
+     */
+    match /warehouse_gb/{warehouseGbId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && resource != null;
+      allow delete: if isSignedIn() && resource != null;
+    }
+
+    /**
+     * @description Tracks roasting processes.
+     * @path /roasting_batches/{roastingBatchId}
+     * @allow (create, update, delete): Any authenticated user can manage roasting batches.
+     * @allow (get, list): Any authenticated user can read roasting batches.
+     * @principle Authenticated users can manage roasting batches.
+     */
+    match /roasting_batches/{roastingBatchId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && resource != null;
+      allow delete: if isSignedIn() && resource != null;
+    }
+
+    /**
+     * @description Stores roasted bean inventory.
+     * @path /inventory_roasted/{inventoryRoastedId}
+     * @allow (create, update, delete): Any authenticated user can manage roasted bean inventory.
+     * @allow (get, list): Any authenticated user can read roasted bean inventory.
+     * @principle Authenticated users can manage roasted inventory.
+     */
+    match /inventory_roasted/{inventoryRoastedId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && resource != null;
+      allow delete: if isSignedIn() && resource != null;
+    }
+
+    /**
+     * @description Manages store inventory.
+     * @path /inventory_store/{inventoryStoreId}
+     * @allow (create, update, delete): Any authenticated user can manage store inventory.
+     * @allow (get, list): Any authenticated user can read store inventory.
+     * @principle Authenticated users can manage the store inventory.
+     */
+    match /inventory_store/{inventoryStoreId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && resource != null;
+      allow delete: if isSignedIn() && resource != null;
+    }
+
+    /**
+     * @description Records sales transactions.
+     * @path /sales_invoices/{salesInvoiceId}
+     * @allow (create, update, delete): Any authenticated user can manage sales invoices.
+     * @allow (get, list): Any authenticated user can read sales invoices.
+     * @principle Authenticated users can manage sales invoices.
+     */
+    match /sales_invoices/{salesInvoiceId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && resource != null;
+      allow delete: if isSignedIn() && resource != null;
+    }
+
+    /**
+     * @description Logs all financial transactions.
+     * @path /transactions/{transactionId}
+     * @allow (get, list): Any authenticated user can read transactions.
+     * @deny (create, update, delete): Only admins can modify transactions (not implemented in this prototype).
+     * @principle Authenticated users can read the transaction logs.
+     */
+    match /transactions/{transactionId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Manages company assets.
+     * @path /assets/{assetId}
+     * @allow (create, update, delete): Any authenticated user can manage company assets.
+     * @allow (get, list): Any authenticated user can read company assets.
+     * @principle Authenticated users can manage company assets.
+     */
+    match /assets/{assetId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && resource != null;
+      allow delete: if isSignedIn() && resource != null;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+  }
+}

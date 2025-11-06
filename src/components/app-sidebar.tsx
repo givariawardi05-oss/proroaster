@@ -26,10 +26,14 @@ import {
     Scale,
     Settings,
     Database,
-    Coffee
+    Coffee,
+    LogOut
 } from 'lucide-react';
 import type { SectionName } from '@/lib/definitions';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/firebase';
+import { signOut } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
 
 interface AppSidebarProps {
   activeSection: SectionName;
@@ -54,11 +58,18 @@ const navItems = [
 
 export function AppSidebar({ activeSection, setActiveSection }: AppSidebarProps) {
   const { setOpen } = useSidebar();
+  const auth = useAuth();
+  const router = useRouter();
   
   const handleSectionClick = (section: SectionName) => {
     setActiveSection(section);
     if(useSidebar) setOpen(false); // Close sidebar on mobile after clicking an item
   }
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push('/login');
+  };
 
   return (
     <Sidebar>
@@ -113,6 +124,15 @@ export function AppSidebar({ activeSection, setActiveSection }: AppSidebarProps)
             >
                 <Database className="size-5" />
                 <span>Sinkronisasi</span>
+            </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+            <SidebarMenuButton
+                onClick={handleLogout}
+                className='justify-start text-red-400 hover:bg-red-900/50 hover:text-red-300'
+            >
+                <LogOut className="size-5" />
+                <span>Logout</span>
             </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarFooter>

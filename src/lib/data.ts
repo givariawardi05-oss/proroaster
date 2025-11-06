@@ -18,12 +18,25 @@ export async function fetchAllData(): Promise<GlobalData> {
         salesInvoice: `INV-${timestamp}`,
     };
 
+    // Make sure all data arrays exist
+    const safeData = {
+        warehouseData: data.warehouseData || [],
+        roastingBatches: data.roastingBatches || [],
+        roastedInventory: data.roastedInventory || [],
+        storeInventory: data.storeInventory || [],
+        salesInvoices: data.salesInvoices || [],
+        purchaseInvoices: data.purchaseInvoices || [],
+        transactions: data.transactions || [],
+        assetsData: data.assetsData || [],
+        settings: data.settings || {},
+    }
+
     return {
-        ...data,
-        transactions: data.transactions.sort((a, b) => new Date(b.Tanggal).getTime() - new Date(a.Tanggal).getTime()), 
-        salesInvoices: data.salesInvoices.sort((a, b) => new Date(b.Tanggal).getTime() - new Date(a.Tanggal).getTime()),
-        purchaseInvoices: data.purchaseInvoices.sort((a, b) => new Date(b.Tanggal).getTime() - new Date(a.Tanggal).getTime()),
-        roastingBatches: data.roastingBatches.sort((a, b) => new Date(b.Tanggal).getTime() - new Date(a.Tanggal).getTime()),
+        ...safeData,
+        transactions: safeData.transactions.sort((a, b) => new Date(b.Tanggal).getTime() - new Date(a.Tanggal).getTime()), 
+        salesInvoices: safeData.salesInvoices.sort((a, b) => new Date(b.Tanggal).getTime() - new Date(a.Tanggal).getTime()),
+        purchaseInvoices: safeData.purchaseInvoices.sort((a, b) => new Date(b.Tanggal).getTime() - new Date(a.Tanggal).getTime()),
+        roastingBatches: safeData.roastingBatches.sort((a, b) => new Date(b.Tanggal).getTime() - new Date(a.Tanggal).getTime()),
         currentBalance,
         nextIds,
     };

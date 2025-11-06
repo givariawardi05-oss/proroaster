@@ -87,7 +87,7 @@ export async function createPurchase(prevState: ActionState, formData: FormData)
                 warehouseItem.Last_Update = purchaseData.Tanggal;
             } else {
                 updatedDb.warehouseData.push({
-                    id: item.name.replace(/\s+/g, '-').toLowerCase(),
+                    id: `wh-${item.name.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}`,
                     Nama_Green_Beans: item.name,
                     Stock_Kg: qty,
                     Avg_HPP: price,
@@ -177,7 +177,7 @@ export async function createRoastingBatch(prevState: ActionState, formData: Form
             roastedInvItem.HPP_Per_Kg = newRoastedAvgHPP;
         } else {
             updatedDb.roastedInventory.push({
-                id: roastedProductName.replace(/\s+/g, '-').toLowerCase(),
+                id: `ri-${roastedProductName.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}`,
                 Kategori: 'Roasted Beans',
                 Produk_Roasting: roastedProductName,
                 Stock_Kg: batchData.Output_Kg,
@@ -250,7 +250,7 @@ export async function transferToStore(prevState: ActionState, formData: FormData
                 storeInvItem.Harga_Jual_Kg = storeInvItem.Harga_Jual_Kg > 0 ? storeInvItem.Harga_Jual_Kg : hpp * 1.5;
             } else {
                 updatedDb.storeInventory.push({
-                    id: roastedDoc.Produk_Roasting.replace(/\s+/g, '-').toLowerCase() + `-${Date.now()}`,
+                    id: `si-${roastedDoc.Produk_Roasting.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}`,
                     Nama_Produk: roastedDoc.Produk_Roasting,
                     Kategori: category,
                     Stock_Kg: stockToTransfer,
@@ -391,7 +391,7 @@ export async function addManualStock(prevState: ActionState, formData: FormData)
             storeItem.Kategori = stockData.Kategori;
         } else {
             updatedDb.storeInventory.push({
-                id: stockData.Nama_Produk.replace(/\s+/g, '-').toLowerCase() + `-${Date.now()}`,
+                id: `si-${stockData.Nama_Produk.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}`,
                 ...stockData,
                 Total_Value: stockData.Stock_Kg * stockData.HPP_Per_Kg,
             });
@@ -525,7 +525,7 @@ export async function createBlend(prevState: ActionState, formData: FormData): P
             throw new Error("Data blend tidak lengkap. Harap isi semua field.");
         }
 
-        const totalPercentage = blendData.components.reduce((sum, c) => sum + c.percentage, 0);
+        const totalPercentage = blendData.components.reduce((sum, c) => sum + safeParseFloat(c.percentage), 0);
         if (Math.round(totalPercentage) !== 100) {
             throw new Error(`Total persentase harus 100%, saat ini ${totalPercentage}%.`);
         }
@@ -540,7 +540,7 @@ export async function createBlend(prevState: ActionState, formData: FormData): P
 
         // Check stock and prepare deductions
         for (const component of blendData.components) {
-            const componentQtyNeeded = blendData.totalQty * (component.percentage / 100);
+            const componentQtyNeeded = blendData.totalQty * (safeParseFloat(component.percentage) / 100);
             const roastedIndex = updatedDb.roastedInventory.findIndex(r => r.id === component.id);
             
             if (roastedIndex === -1) {
@@ -580,7 +580,7 @@ export async function createBlend(prevState: ActionState, formData: FormData): P
             roastedItem.Kategori = 'Blend';
         } else {
             updatedDb.roastedInventory.push({
-                id: blendData.name.replace(/\s+/g, '-').toLowerCase() + `-${Date.now()}`,
+                id: `ri-${blendData.name.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}`,
                 Produk_Roasting: blendData.name,
                 Kategori: 'Blend',
                 Stock_Kg: blendData.totalQty,
@@ -741,7 +741,7 @@ export async function updatePurchase(prevState: ActionState, formData: FormData)
                 warehouseItem.Last_Update = updatedInvoiceData.Tanggal;
             } else {
                 updatedWarehouseData.push({
-                    id: item.name.replace(/\s+/g, '-').toLowerCase(),
+                    id: `wh-${item.name.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}`,
                     Nama_Green_Beans: item.name,
                     Stock_Kg: qty,
                     Avg_HPP: price,

@@ -1,35 +1,37 @@
 "use client";
 
-import React, { useActionState, useEffect, useTransition } from "react";
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { createAsset } from "@/lib/actions";
-import { useToast } from "@/hooks/use-toast";
-import { getTodayDateString } from "@/lib/utils";
-import type { GlobalData } from "@/lib/definitions";
+import React, { useActionState, useEffect, useTransition } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { createAsset } from '@/lib/actions'; // <-- Jembatan ke Server Action
+import { useToast } from '@/hooks/use-toast';
+import { getTodayDateString } from '@/lib/utils';
+// Kita TIDAK lagi butuh GlobalData di sini
 
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { SubmitButton } from "@/components/submit-button";
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SubmitButton } from '@/components/submit-button';
 
+// Skema validasi (tidak berubah)
 const assetSchema = z.object({
-  name: z.string().min(3, "Nama aset minimal 3 karakter"),
-  category: z.string().min(1, "Kategori wajib dipilih"),
-  date: z.string().min(1, "Tanggal perolehan wajib diisi"),
-  value: z.coerce.number().min(1, "Nilai perolehan harus lebih dari 0"),
-  depreciation: z.coerce.number().min(0, "Penyusutan tidak boleh negatif"),
+  name: z.string().min(3, 'Nama aset minimal 3 karakter'),
+  category: z.string().min(1, 'Kategori wajib dipilih'),
+  date: z.string().min(1, 'Tanggal perolehan wajib diisi'),
+  value: z.coerce.number().min(1, 'Nilai perolehan harus lebih dari 0'),
+  depreciation: z.coerce.number().min(0, 'Penyusutan tidak boleh negatif'),
 });
 
 type AssetFormValues = z.infer<typeof assetSchema>;
 
+// Props-nya kita ubah. Kita tidak lagi butuh 'currentData'
 interface AssetFormProps {
-  onFormSubmit: (newData: GlobalData | Omit<GlobalData, 'nextIds' | 'currentBalance'>) => void;
-  currentData: GlobalData;
+  onSaveSuccess: () => void; // Ini fungsi untuk menutup modal/refresh tabel
 }
 
-export function AssetForm({ onFormSubmit, currentData }: AssetFormProps) {
+export function AssetForm({ onSaveSuccess }: AssetFormProps) {
+  // Ini menghubungkan ke 'createAsset' di actions.ts
   const [state, formAction, isPending] = useActionState(createAsset, null);
   const { toast } = useToast();
   const [isTransitioning, startTransition] = useTransition();
@@ -49,73 +51,91 @@ export function AssetForm({ onFormSubmit, currentData }: AssetFormProps) {
     },
   });
 
+  // useEffect ini diubah untuk memantau 'state' dari Server Action
   useEffect(() => {
-    if (!state) return;
-    if (state.status === "success" && state.data) {
-      toast({ title: "Sukses!", description: state.message });
-      reset();
-      onFormSubmit(state.data);
-    } else if (state.status === "error") {
-      toast({ title: "Error!", description: state.message, variant: "destructive" });
+    if (!state) return; // Abaikan jika state awal (null)
+    
+    if (state.status === 'success') {
+      // Jika server bilang SUKSES
+      toast({ title: 'Sukses!', description: state.message });
+      reset(); // Kosongkan formulir
+      onSaveSuccess(); // Panggil fungsi (dari assets.tsx) untuk tutup modal
+    } else if (state.status === 'error') {
+      // Jika server bilang GAGAL
+      toast({ title: 'Error!', description: state.message, variant: 'destructive' });
     }
-  }, [state, onFormSubmit, reset, toast]);
-  
+  }, [state, onSaveSuccess, reset, toast]); // Dijalankan setiap 'state' berubah
+
+  // Ini fungsi yang dipanggil saat tombol Simpan diklik
+  // Ini adalah "Pak Pos"
   const onFormSubmitWithData = (data: AssetFormValues) => {
     startTransition(() => {
+      // 1. Ubah data formulir (JSON) menjadi FormData (surat)
       const formData = new FormData();
       Object.entries(data).forEach(([key, value]) => {
-          formData.append(key, String(value));
+        formData.append(key, String(value));
       });
-      formData.append('currentData', JSON.stringify(currentData));
+      
+      // 2. Kita HAPUS baris 'currentData' yang lama
+      // formData.append('currentData', JSON.stringify(currentData)); <-- DIHAPUS
+
+      // 3. Kirim "surat" (formData) ke "jembatan" (formAction)
       formAction(formData);
     });
-  }
+  };
   
+  // Ini adalah kode yang Anda paste, sekarang sudah benar:
   return (
+    // HANYA SATU FORM.
+    // 'handleSubmit' akan memvalidasi data.
+    // Jika valid, dia akan memanggil 'onFormSubmitWithData'.
     <form onSubmit={handleSubmit(onFormSubmitWithData)} className="space-y-4">
-        <div>
-          <Label htmlFor="name">Nama Aset</Label>
-          <Input id="name" {...register("name")} />
-          {errors.name && <p className="text-destructive text-sm mt-1">{errors.name.message}</p>}
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-            <Label htmlFor="category">Kategori</Label>
-            <Controller
-                name="category"
-                control={control}
-                render={({ field }) => (
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="fixed">Aset Tetap</SelectItem>
-                        <SelectItem value="current">Aset Lancar (Non-Stock)</SelectItem>
-                    </SelectContent>
-                </Select>
-                )}
-            />
-            {errors.category && <p className="text-destructive text-sm mt-1">{errors.category.message}</p>}
-            </div>
-            <div>
-            <Label htmlFor="date">Tanggal Perolehan</Label>
-            <Input id="date" type="date" {...register("date")} />
-            {errors.date && <p className="text-destructive text-sm mt-1">{errors.date.message}</p>}
-            </div>
-        </div>
+      
+      {/* Tidak ada form kedua yang tersembunyi */}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-            <Label htmlFor="value">Nilai Perolehan (Rp)</Label>
-            <Input id="value" type="number" {...register("value")} />
-            {errors.value && <p className="text-destructive text-sm mt-1">{errors.value.message}</p>}
-            </div>
-            <div>
-            <Label htmlFor="depreciation">Penyusutan / Tahun (Rp)</Label>
-            <Input id="depreciation" type="number" {...register("depreciation")} />
-            {errors.depreciation && <p className="text-destructive text-sm mt-1">{errors.depreciation.message}</p>}
-            </div>
-        </div>
+      <div>
+        <Label htmlFor="name">Nama Aset</Label>
+        <Input id="name" {...register("name")} />
+        {errors.name && <p className="text-destructive text-sm mt-1">{errors.name.message}</p>}
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+          <Label htmlFor="category">Kategori</Label>
+          <Controller
+              name="category"
+              control={control}
+              render={({ field }) => (
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                      <SelectItem value="fixed">Aset Tetap</SelectItem>
+                      <SelectItem value="current">Aset Lancar (Non-Stock)</SelectItem>
+                  </SelectContent>
+              </Select>
+              )}
+          />
+          {errors.category && <p className="text-destructive text-sm mt-1">{errors.category.message}</p>}
+          </div>
+          <div>
+          <Label htmlFor="date">Tanggal Perolehan</Label>
+          <Input id="date" type="date" {...register("date")} />
+          {errors.date && <p className="text-destructive text-sm mt-1">{errors.date.message}</p>}
+          </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+          <Label htmlFor="value">Nilai Perolehan (Rp)</Label>
+          <Input id="value" type="number" {...register("value")} />
+          {errors.value && <p className="text-destructive text-sm mt-1">{errors.value.message}</p>}
+          </div>
+          <div>
+          <Label htmlFor="depreciation">Penyusutan / Tahun (Rp)</Label>
+          <Input id="depreciation" type="number" {...register("depreciation")} />
+          {errors.depreciation && <p className="text-destructive text-sm mt-1">{errors.depreciation.message}</p>}
+          </div>
+      </div>
 
       <div className="flex justify-end pt-4">
         <SubmitButton pending={isPending || isTransitioning} pendingText="Menyimpan...">Simpan Aset</SubmitButton>

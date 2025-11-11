@@ -1,0 +1,231 @@
+// File: prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- 1. MODUL INVENTORY & MASTER DATA ---
+// (Gudang Green Bean, Inventaris Toko, Roasting)
+
+// Mewakili master data biji kopi mentah
+// Dilihat di: "Gudang Green Beans"
+// Diisi oleh: "Faktur Pembelajaran Baru"
+model GreenBean {
+  id        String   @id @default(uuid())
+  name      String   @unique // Mis: "etopia"
+  origin    String?
+  stockInKg Float    @default(0.0)
+  avgHpp    Float    @default(0.0) // Harga Rata-rata (WAC)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relasi
+  purchaseItems PurchaseItem[] // Daftar di faktur pembelian
+  roastingBatches RoastingBatch[] // Daftar di batch roasting
+}
+
+// Mewakili master data profil roasting
+// Dilihat di: "Batch Roasting Baru" (dropdown)
+model RoastingProfile {
+  id    String @id @default(uuid())
+  name  String @unique
+  notes String?
+
+  // Relasi
+  roastingBatches RoastingBatch[]
+}
+
+// Mewakili produk jadi yang siap dijual
+// Dilihat di: "Inventaris Toko"
+// Diisi oleh: "Batch Roasting Baru" atau "Tambah/Update Produk Manual"
+model Product {
+  id          String   @id @default(uuid())
+  name        String   @unique // Mis: "Gayo Wine"
+  category    String   // Mis: "Roasted Beans", "Merchandise"
+  stockInKg   Float    @default(0.0)
+  hppPerKg    Float    @default(0.0) // HPP dari roasting / input manual
+  sellingPrice Float   @default(0.0) // Harga Jual/kg
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relasi
+  salesItems SalesItem[] // Daftar di invoice penjualan
+}
+
+
+// --- 2. MODUL OPERASIONAL ---
+// (Pembelian, Roasting, Penjualan)
+
+// Mewakili master data Pemasok/Supplier
+// Diisi di: "Faktur Pembelajaran Baru"
+model Supplier {
+  id      String   @id @default(uuid())
+  name    String   @unique
+  phone   String?
+  address String?
+
+  // Relasi
+  purchaseInvoices PurchaseInvoice[]
+}
+
+// Mewakili "Faktur Pembelajaran Baru"
+model PurchaseInvoice {
+  id            String   @id @default(uuid())
+  invoiceNumber String   @unique // Mis: "FP-17628..."
+  date          DateTime
+  paymentSource String   // Mis: "Cash (Kas)" (Nanti bisa dihubungkan ke Akun)
+  grandTotal    Float
+  
+  supplierId    String
+  supplier      Supplier @relation(fields: [supplierId], references: [id])
+
+  // Relasi
+  items         PurchaseItem[] // Daftar item di faktur ini
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// Mewakili "Item Pembelian" di dalam faktur
+model PurchaseItem {
+  id        String @id @default(uuid())
+  quantityKg Float
+  pricePerKg Float
+  totalPrice Float
+
+  purchaseInvoiceId String
+  purchaseInvoice   PurchaseInvoice @relation(fields: [purchaseInvoiceId], references: [id], onDelete: Cascade)
+  
+  greenBeanId String
+  greenBean   GreenBean @relation(fields: [greenBeanId], references: [id])
+}
+
+// Mewakili "Batch Roasting Baru"
+model RoastingBatch {
+  id                  String   @id @default(uuid())
+  batchId             String   @unique // Mis: "RB-17628..."
+  date                DateTime
+  qtyInputKg          Float
+  expectedYieldPercent Float    @default(85)
+  actualYieldKg       Float    // Diisi setelah roasting selesai
+  hppPerKgHasil       Float    // HPP produk jadi
+
+  greenBeanId         String
+  greenBean           GreenBean @relation(fields: [greenBeanId], references: [id])
+
+  roastingProfileId   String
+  roastingProfile     RoastingProfile @relation(fields: [roastingProfileId], references: [id])
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+// Mewakili master data Pelanggan/Customer
+// Diisi di: "Invoice Penjualan Baru"
+model Customer {
+  id      String   @id @default(uuid())
+  name    String
+  email   String?  @unique
+  phone   String?
+  address String?
+
+  // Relasi
+  salesInvoices SalesInvoice[]
+}
+
+// Mewakili "Invoice Penjualan Baru"
+model SalesInvoice {
+  id            String   @id @default(uuid())
+  invoiceNumber String   @unique // Mis: "INV-001"
+  date          DateTime
+  dueDate       DateTime
+  status        String   // Mis: "Lunas", "Belum Bayar"
+  grandTotal    Float
+
+  customerId    String
+  customer      Customer @relation(fields: [customerId], references: [id])
+
+  // Relasi
+  items         SalesItem[] // Daftar item di invoice ini
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// Mewakili "Item Penjualan" di dalam invoice
+model SalesItem {
+  id          String @id @default(uuid())
+  quantityKg  Float
+  pricePerKg  Float  // Harga jual saat itu
+  totalPrice  Float
+
+  salesInvoiceId String
+  salesInvoice   SalesInvoice @relation(fields: [salesInvoiceId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+
+// --- 3. MODUL AKUNTANSI ---
+// (Buku Besar, Neraca, Aset)
+
+// Mewakili Chart of Accounts (COA) / Daftar Akun
+// Dilihat di: "Buku Besar", "Neraca", "Tambah Pengeluaran"
+model Account {
+  id            String  @id @default(uuid())
+  name          String  @unique // Mis: "Cash (Kas)", "Piutang Dagang", "Persediaan", "Biaya Listrik"
+  category      String  // Mis: "Aset Lancar", "Kewajiban", "Ekuitas", "Biaya Operasional"
+  normalBalance String  // "DEBIT" atau "CREDIT"
+  balance       Float   @default(0.0)
+
+  // Relasi
+  journalEntries JournalEntry[]
+}
+
+// Mewakili satu transaksi utuh (Jurnal Umum)
+// Dilihat di: "Buku Besar" (Riwayat Transaksi)
+model Transaction {
+  id          String   @id @default(uuid())
+  date        DateTime
+  description String   // Mis: "Pembelian dari cbb", "Biaya listrik bulan ini"
+  
+  // Relasi
+  entries     JournalEntry[] // Jurnal Debit/Kredit untuk transaksi ini
+
+  createdAt   DateTime @default(now())
+}
+
+// Mewakili satu baris jurnal (Debit/Kredit)
+// Ini adalah inti dari double-entry accounting
+model JournalEntry {
+  id    String @id @default(uuid())
+  debit  Float  @default(0.0)
+  credit Float  @default(0.0)
+
+  transactionId String
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  accountId String
+  account   Account @relation(fields: [accountId], references: [id])
+}
+
+// Mewakili "Data Aset"
+// Dilihat di: "Aset", "Neraca"
+model Asset {
+  id                  String   @id @default(uuid())
+  name                String
+  category            String   // Mis: "Aset Tetap", "Aset Lancar"
+  purchaseDate        DateTime // Tanggal Perolehan
+  purchaseValue       Float    // Nilai Perolehan
+  depreciationPerYear Float    // Penyusutan / Tahun
+  
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}

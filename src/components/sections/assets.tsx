@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -20,48 +20,70 @@ import {
 } from '@/components/ui/table';
 import { StatCard } from '@/components/stat-card';
 import { formatRupiah } from '@/lib/utils';
-import type { GlobalData, Asset } from '@/lib/definitions';
-import { PlusCircle, DollarSign, Building } from 'lucide-react';
+// Kita butuh tipe Asset dari Prisma, bukan definitions
+import type { Asset } from '@/generated/prisma/client';
+import { PlusCircle, DollarSign, Building, Loader2 } from 'lucide-react';
 import { AssetForm } from './asset-form';
+import { getAssets } from '@/lib/actions'; // <-- Import fungsi getAssets
 
-interface AssetsProps {
-  data: GlobalData;
-  onDataChange: (data: GlobalData | Omit<GlobalData, 'nextIds' | 'currentBalance'>) => void;
-}
-
-export function Assets({ data, onDataChange }: AssetsProps) {
+// Komponen ini tidak lagi menerima props 'data' atau 'onDataChange'
+export function Assets() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  // State lokal untuk menyimpan data dari database
+  const [assetsData, setAssetsData] = useState<Asset[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const processedAssets = useMemo(() => (data.assetsData || []).map(asset => {
-    const purchaseValue = asset.Nilai_Perolehan || 0;
-    const depreciationAnnual = asset.Penyusutan_Tahun || 0;
-    if (depreciationAnnual === 0) return { ...asset, bookValue: purchaseValue };
+  // Fungsi untuk mengambil data
+  const loadAssets = async () => {
+    setIsLoading(true);
+    const data = await getAssets();
+    setAssetsData(data);
+    setIsLoading(false);
+  };
 
-    const acquisitionDate = new Date(asset.Tgl_Perolehan);
-    const today = new Date();
-    const yearsHeld = (today.getTime() - acquisitionDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
-    const accumulatedDepreciation = depreciationAnnual * yearsHeld;
-    const bookValue = Math.max(0, purchaseValue - accumulatedDepreciation);
-    return { ...asset, bookValue };
-  }), [data.assetsData]);
-  
+  // Ambil data saat komponen pertama kali dimuat
+  useEffect(() => {
+    loadAssets();
+  }, []);
+
+  // Logika 'useMemo' ini di-update untuk menggunakan field Prisma
+  const processedAssets = useMemo(
+    () =>
+      (assetsData || []).map((asset) => {
+        // NAMA FIELD BARU DARI PRISMA
+        const purchaseValue = asset.purchaseValue || 0;
+        const depreciationAnnual = asset.depreciationPerYear || 0;
+        if (depreciationAnnual === 0) return { ...asset, bookValue: purchaseValue };
+
+        const acquisitionDate = new Date(asset.purchaseDate);
+        const today = new Date();
+        const yearsHeld = (today.getTime() - acquisitionDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+        const accumulatedDepreciation = depreciationAnnual * yearsHeld;
+        const bookValue = Math.max(0, purchaseValue - accumulatedDepreciation);
+        return { ...asset, bookValue };
+      }),
+    [assetsData],
+  );
+
   const stats = useMemo(() => {
     let totalCurrentAssets = 0;
     let totalFixedAssets = 0;
-    processedAssets.forEach(asset => {
-        if (asset.Kategori.toLowerCase() === 'fixed') {
-            totalFixedAssets += asset.bookValue;
-        } else {
-            totalCurrentAssets += asset.bookValue;
-        }
+    processedAssets.forEach((asset) => {
+      // NAMA FIELD BARU DARI PRISMA
+      if (asset.category.toLowerCase().includes('tetap')) {
+        totalFixedAssets += asset.bookValue;
+      } else {
+        totalCurrentAssets += asset.bookValue;
+      }
     });
     return { totalCurrentAssets, totalFixedAssets, totalAllAssets: totalCurrentAssets + totalFixedAssets };
   }, [processedAssets]);
-  
-  const handleFormSubmit = (newData: GlobalData | Omit<GlobalData, 'nextIds' | 'currentBalance'>) => {
-    onDataChange(newData);
-    setIsDialogOpen(false);
-  }
+
+  // INI DIA "CARA LAPOR" YANG HILANG
+  const handleSaveSuccess = () => {
+    setIsDialogOpen(false); // 1. Tutup dialog
+    loadAssets(); // 2. Ambil ulang data dari database
+  };
 
   return (
     <div className="space-y-6">
@@ -82,11 +104,15 @@ export function Assets({ data, onDataChange }: AssetsProps) {
               <DialogTitle>Tambah Aset Baru</DialogTitle>
               <DialogDescription>Isi formulir di bawah ini untuk menambahkan aset baru ke dalam sistem.</DialogDescription>
             </DialogHeader>
-            <AssetForm onFormSubmit={handleFormSubmit} currentData={data} />
+            {/* INI DIA PERBAIKANNYA: 
+              Kita memberikan 'handleSaveSuccess' ke 'AssetForm' 
+            */}
+            <AssetForm onSaveSuccess={handleSaveSuccess} />
           </DialogContent>
         </Dialog>
       </header>
 
+      {/* ... (StatCard tetap sama) ... */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard title="Total Aset Lancar" value={formatRupiah(stats.totalCurrentAssets)} icon={<DollarSign />} colorClass="text-green-500" />
         <StatCard title="Total Aset Tetap (Nilai Buku)" value={formatRupiah(stats.totalFixedAssets)} icon={<Building />} colorClass="text-orange-500" />
@@ -95,41 +121,51 @@ export function Assets({ data, onDataChange }: AssetsProps) {
 
       <Card>
         <CardHeader>
-            <CardTitle>Daftar Aset</CardTitle>
+          <CardTitle>Daftar Aset</CardTitle>
         </CardHeader>
         <CardContent>
+          {isLoading ? (
+            <div className="flex justify-center items-center h-24">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
             <Table>
-                <TableHeader>
+              <TableHeader>
                 <TableRow>
-                    <TableHead>Nama Aset</TableHead>
-                    <TableHead>Kategori</TableHead>
-                    <TableHead>Tgl Perolehan</TableHead>
-                    <TableHead>Nilai Perolehan</TableHead>
-                    <TableHead>Penyusutan/Tahun</TableHead>
-                    <TableHead>Nilai Buku</TableHead>
+                  <TableHead>Nama Aset</TableHead>
+                  <TableHead>Kategori</TableHead>
+                  <TableHead>Tgl Perolehan</TableHead>
+                  <TableHead>Nilai Perolehan</TableHead>
+                  <TableHead>Penyusutan/Tahun</TableHead>
+                  <TableHead>Nilai Buku</TableHead>
                 </TableRow>
-                </TableHeader>
-                <TableBody>
+              </TableHeader>
+              <TableBody>
                 {processedAssets.length > 0 ? (
-                    processedAssets.map((asset) => (
+                  processedAssets.map((asset) => (
                     <TableRow key={asset.id}>
-                        <TableCell className="font-medium">{asset.Nama_Aset}</TableCell>
-                        <TableCell>{asset.Kategori}</TableCell>
-                        <TableCell>{new Date(asset.Tgl_Perolehan).toLocaleDateString('id-ID')}</TableCell>
-                        <TableCell className="text-right">{formatRupiah(asset.Nilai_Perolehan)}</TableCell>
-                        <TableCell className="text-right">{formatRupiah(asset.Penyusutan_Tahun)}</TableCell>
-                        <TableCell className="font-semibold text-right">{formatRupiah(asset.bookValue)}</TableCell>
+                      {/* NAMA FIELD BARU DARI PRISMA */}
+                      <TableCell className="font-medium">{asset.name}</TableCell>
+                      <TableCell>{asset.category}</TableCell>
+                      <TableCell>{new Date(asset.purchaseDate).toLocaleDateString('id-ID')}</TableCell>
+                      <TableCell className="text-right">{formatRupiah(asset.purchaseValue)}</TableCell>
+                      <TableCell className="text-right">{formatRupiah(asset.depreciationPerYear)}</TableCell>
+                      <TableCell className="font-semibold text-right">{formatRupiah(asset.bookValue)}</TableCell>
                     </TableRow>
-                    ))
+                  ))
                 ) : (
-                    <TableRow>
-                    <TableCell colSpan={6} className="text-center h-24">Belum ada data aset.</TableCell>
-                    </TableRow>
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center h-24">
+                      Belum ada data aset.
+                    </TableCell>
+                  </TableRow>
                 )}
-                </TableBody>
+              </TableBody>
             </Table>
+          )}
         </CardContent>
       </Card>
     </div>
   );
+
 }
